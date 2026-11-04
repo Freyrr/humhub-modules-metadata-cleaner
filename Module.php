@@ -95,7 +95,7 @@ class Module extends \humhub\components\Module
      */
     public function getDescription()
     {
-        return Yii::t('MetadataCleanerModule.base', 'Removes EXIF, XMP and IPTC metadata (GPS included) from uploaded images and videos.');
+        return Yii::t('MetadataCleanerModule.base', 'Removes metadata (GPS included) from uploaded images, videos, audio files and documents.');
     }
 
     /**

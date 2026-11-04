@@ -26,7 +26,7 @@ $formatSize = static fn($bytes) => $bytes === null ? '' : Yii::$app->formatter->
     </div>
     <div class="panel-body">
         <p class="text-body-secondary">
-            <?= Yii::t('MetadataCleanerModule.base', 'EXIF, XMP and IPTC metadata (GPS included) are removed from every uploaded image and video, without re-encoding the file.') ?>
+            <?= Yii::t('MetadataCleanerModule.base', 'Metadata (EXIF, XMP, IPTC, GPS, author, device and editing data) is removed from uploaded images, videos, audio files and documents, without re-encoding the file.') ?>
         </p>
 
         <?php $form = ActiveForm::begin(['acknowledge' => true]) ?>
