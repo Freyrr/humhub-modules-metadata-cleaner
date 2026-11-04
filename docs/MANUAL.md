@@ -27,8 +27,13 @@
 | FLAC | Vorbis comments, pictures and application blocks (turned into padding) | stream info, seek table, cue sheet, audio frames |
 | Ogg (Vorbis, Opus, Theora, Speex, FLAC) | all comments of the comment header (the encoder vendor string is kept) | all packets; page checksums are recomputed |
 | TIFF | all tags not needed to decode the image (EXIF, GPS, XMP, IPTC, device and author tags) | image data and the tags that describe it |
-| RAW DNG | as TIFF, plus maker notes (DNGPrivateData), original raw file name and data, preview application, settings and date | raw image data and the DNG tags needed to develop it (CFA layout, colour matrices, calibration, UniqueCameraModel, opcodes) |
-
+| RAW (DNG, CR2, NEF, ARW, ORF, RW2) | as TIFF, plus maker notes (DNGPrivateData), original raw file name and data, preview application, settings and date | raw image data and the DNG tags needed to develop it (CFA layout, colour matrices, calibration, UniqueCameraModel, opcodes) |
+| Photoshop (PSD, PSB) | image resources with IPTC, EXIF, XMP, thumbnails, copyright, URLs, slices, version info, print settings, auto-save path, plug-in and Lightroom data | layers, masks, pixel data, and the resources that describe the image (resolution, ICC profile, alpha channels, layer groups, paths, halftone and transfer settings) |
+| JPEG 2000 (JP2, JPX) | uuid (EXIF, XMP, vendor), xml, asoc and lbl boxes, replaced by free boxes of the same size | header and codestream |
+| JPEG XL (container) | Exif, xml (XMP) and jumb (JUMBF, C2PA) boxes, also brotli-compressed, replaced by free boxes of the same size | codestream |
+| WAV, RF64, AVI | LIST INFO (title, artist, comment, software), bext, iXML, axml, XMP, exif and ID3 chunks | format, sound and video data, AVI index |
+| AIFF, AIFC | NAME, AUTH, (c), ANNO, COMT, ID3, iXML, XMP and APPL chunks | COMM, SSND and the other chunks needed to play the file |
+| WMV, WMA (ASF) | content description, extended content description, script commands, markers, branding, metadata and metadata library objects (payload zeroed in place) | file layout and media data |
 | PDF | document information dictionaries (author, title, subject, keywords, creator, producer, dates, custom entries) of every revision, also inside compressed object streams; every XMP metadata stream | pages, fonts, images and the file structure: everything is overwritten in place with data of the same size |
 | Office (DOCX, XLSX, PPTX...) | docProps/core.xml, app.xml and custom.xml (author, last modified by, company, manager, template, editing time, custom properties) | every other part of the document, copied byte for byte |
 | OpenDocument (ODT, ODS, ODP...) | meta.xml (creator, dates, editing time, generator, user-defined fields) | every other part of the document, copied byte for byte |

@@ -17,34 +17,45 @@ namespace humhub\modules\metadataCleaner\cleaners;
 final class PsdCleaner implements CleanerInterface
 {
     /**
-     * Image resource IDs needed to open or print the file. Everything else
-     * (IPTC 0x0404, EXIF 0x0422, XMP 0x0424, thumbnails, document IDs, URLs,
-     * copyrights, print flags...) is metadata and is removed.
+     * Image resource IDs that describe how the image looks (Adobe Photoshop
+     * File Formats Specification). Everything else is removed: IPTC 0x0404,
+     * EXIF 0x0422/0x0423, XMP 0x0424, thumbnails 0x0409/0x040C, copyright
+     * 0x040A, URLs 0x040B/0x041B/0x041E, slices 0x041A, document IDs 0x0414,
+     * version info 0x0421, caption digest 0x0425, print settings, auto-save
+     * path 0x043E, plug-in, ImageReady and Lightroom data.
      */
     private const KEEP_IDS = [
-        0x03ED, // ResolutionInfo: needed to print at the right size
-        0x0405, // Alpha channel names: part of the layer data
-        0x0406, // Digitiser tablet info? dropped actually - see below
-        0x040F, // ICC profile: colours would be wrong without it
-        0x0410, // ICC untagged profile flag
-        0x0411, // ICC untagged? no: IndexedColourTableTransfer - keep colours right
-        0x0413, // Colour samplers: used by the document workspace
-        0x0415, // Colour halftoning? kept: printing info
-        0x0417, // Transparency index
-        0x0418, // Global altitude? no. Kept ids list is reviewed below.
-        0x0419, // Global angle: affects bevel layer effects
-        0x041D, // Workflow URL? drop
-        0x041E, // Alpha identifiers: layer effects data
-        0x041F, // URL list? drop
-        0x0426, // Onion skins? no: Fill opacity / layer data
-        0x043A, // Print scale? no - this is IPTC digest in some docs
-        0x044C, // Pixel aspect ratio
-        0x0BB7, // Print flags
-        0x2710, // Print flags (older)
-        0x03F3, // Print flags (older)
+        0x03ED, // Resolution info
+        0x03EE, // Alpha channel names
+        0x03F4, // Grayscale and multichannel halftoning
         0x03F5, // Colour halftoning
-        0x03F8, // Colour transfer
+        0x03F6, // Duotone halftoning
+        0x03F7, // Grayscale and multichannel transfer functions
+        0x03F8, // Colour transfer functions
+        0x03F9, // Duotone transfer functions
+        0x03FA, // Duotone image information: needed to show duotone images
+        0x03FB, // Effective black and white values
+        0x0400, // Layer state
+        0x0401, // Working path
+        0x0402, // Layer groups
+        0x040D, // Global light angle (layer effects)
+        0x040F, // ICC profile: colours would be wrong without it
+        0x0411, // ICC untagged flag
+        0x0415, // Unicode alpha channel names
+        0x0416, // Indexed colour table count
+        0x0417, // Transparency index
+        0x0419, // Global light altitude (layer effects)
+        0x041D, // Alpha channel identifiers
+        0x0428, // Pixel aspect ratio
+        0x042A, // Alternate duotone colours
+        0x042B, // Alternate spot colours
+        0x042D, // Layer selection IDs
+        0x0430, // Layer groups enabled
+        0x0BB7, // Name of the clipping path
     ];
+
+    /** Saved paths (0x07D0-0x0BB6) are part of the drawing and are kept too. */
+    private const PATH_IDS = [0x07D0, 0x0BB6];
 
     public function clean(string $path, CleanOptions $options): CleanResult
     {
@@ -100,7 +111,7 @@ final class PsdCleaner implements CleanerInterface
             $body = substr($data, $sizePos + 4, $size);
             $p = $blockEnd;
 
-            if (in_array($id, self::KEEP_IDS, true)) {
+            if (in_array($id, self::KEEP_IDS, true) || ($id >= self::PATH_IDS[0] && $id <= self::PATH_IDS[1])) {
                 $out .= $block;
                 continue;
             }

@@ -86,7 +86,7 @@ class ConfigureForm extends Model
     public static function formatOptions(): array
     {
         return [
-            FormatDetector::FORMAT_JPEG => 'JPEG (.jpg, .jpeg)',
+            FormatDetector::FORMAT_JPEG => 'JPEG, JPEG 2000, JPEG XL (.jpg, .jpeg, .jp2, .jxl)',
             FormatDetector::FORMAT_PNG => 'PNG (.png)',
             FormatDetector::FORMAT_WEBP => 'WebP (.webp)',
             FormatDetector::FORMAT_GIF => 'GIF (.gif)',
