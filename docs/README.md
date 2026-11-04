@@ -15,6 +15,8 @@ When such a file is shared in a social network, every member who can download it
 
 ## Privacy laws it helps with
 
+_Last reviewed: November 4, 2026. Laws change: check the current text of the laws that apply to you._
+
 Removing data that is not needed is a basic principle of privacy laws around the world. Location data, in particular, is personal data almost everywhere, and in several jurisdictions it is a sensitive category. This module helps a HumHub operator apply these principles to uploaded files:
 
 **European Union and Europe**
@@ -52,5 +54,8 @@ Note that the optional log of the module can itself store personal data (for exa
 ## Requirements
 
 - HumHub 1.19 or later.
+- PHP 8.2 or later (the minimum of HumHub 1.19).
+- PHP extensions: `dom`, `libxml`, `mbstring` and `json`. HumHub already requires all of them.
+- No Composer packages and no external programs (exiftool, ImageMagick, ffmpeg...) at runtime. Those tools are used only by the test suite.
 
 See [MANUAL.md](MANUAL.md) for the settings and the console commands.
