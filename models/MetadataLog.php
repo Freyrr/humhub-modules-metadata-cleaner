@@ -17,12 +17,18 @@ use humhub\modules\user\models\User;
  * @property int|null $file_id
  * @property string|null $file_guid
  * @property string|null $file_name
+ * @property string|null $mime_type
+ * @property int|null $size_before size of the file before cleaning, in bytes
+ * @property int|null $size_after size of the file after cleaning, in bytes
  * @property string $status one of the STATUS_* constants
  * @property string|null $error why cleaning failed
  * @property string|null $format
  * @property string $source
- * @property string|null $fields JSON list of field names
- * @property string|null $field_values JSON map of field name => value
+ * @property string|null $metadata JSON object, field name => value (values empty in "fields only" mode)
+ * @property string|null $object_model class of the record the file is attached to (post, comment...)
+ * @property int|null $object_id id of that record
+ * @property int|null $content_id content the file belongs to
+ * @property int|null $contentcontainer_id space or profile of that content
  * @property int|null $created_by
  * @property string $created_at upload date
  *
@@ -66,22 +72,12 @@ class MetadataLog extends ActiveRecord
     }
 
     /**
-     * @return string[]
+     * @return array<string, string> field name => value
      */
-    public function getFieldList(): array
+    public function getMetadataMap(): array
     {
-        $fields = json_decode((string)$this->fields, true);
+        $map = json_decode((string)$this->metadata, true);
 
-        return is_array($fields) ? $fields : [];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function getValueMap(): array
-    {
-        $values = json_decode((string)$this->field_values, true);
-
-        return is_array($values) ? $values : [];
+        return is_array($map) ? $map : [];
     }
 }

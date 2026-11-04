@@ -15,7 +15,9 @@ use Throwable;
 use Yii;
 
 /**
- * Writes and purges the log of removed metadata.
+ * Writes and purges the log of cleaning runs.
+ *
+ * Every method catches its own errors: logging must never break an upload.
  */
 class LogService
 {
@@ -23,15 +25,17 @@ class LogService
     public const SOURCE_STORED = 'stored';
     public const SOURCE_CONSOLE = 'console';
 
+    /** Largest JSON stored in the metadata column (TEXT holds 65535 bytes). */
+    public const MAX_METADATA_BYTES = 60000;
+
     public function __construct(private readonly Module $module)
     {
     }
 
     /**
-     * Writes a log row when the file had metadata and the log is enabled.
-     * A logging failure never blocks the upload.
+     * Writes a row when the file had metadata and the log is enabled.
      */
-    public function record(File $file, CleanResult $result, string $source): void
+    public function record(File $file, CleanResult $result, string $source, ?int $sizeBefore = null): void
     {
         $mode = $this->module->getLogMode();
         if ($mode === Module::LOG_OFF || !$result->hadMetadata()) {
@@ -40,14 +44,16 @@ class LogService
 
         try {
             $fields = (new FieldExtractor())->extract($result->removed);
+            if ($mode !== Module::LOG_FIELDS_AND_VALUES) {
+                $fields = array_fill_keys(array_keys($fields), '');
+            }
 
             $log = $this->newRow($file, (string)$file->file_name, $source);
             $log->status = MetadataLog::STATUS_CLEANED;
             $log->format = $result->format;
-            $log->fields = json_encode(array_keys($fields), JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-            $log->field_values = $mode === Module::LOG_FIELDS_AND_VALUES
-                ? json_encode($fields, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE)
-                : null;
+            $log->metadata = self::encode($fields);
+            $log->size_before = $sizeBefore;
+            $log->size_after = $file->size !== null ? (int)$file->size : null;
             $this->save($log);
         } catch (Throwable $e) {
             Yii::error($e, 'metadata-cleaner');
@@ -55,13 +61,13 @@ class LogService
     }
 
     /**
-     * Writes a log row for a file that could not be cleaned, whether it had
+     * Writes a row for a file that could not be cleaned, whether it had
      * metadata or not, unless the log is switched off.
      *
      * @param File|null $file null when the upload was rejected before a record existed
      * @param string $status MetadataLog::STATUS_PASSED or MetadataLog::STATUS_REJECTED
      */
-    public function recordFailure(?File $file, string $fileName, ?string $format, Throwable $error, string $status, string $source): void
+    public function recordFailure(?File $file, string $fileName, ?string $format, Throwable $error, string $status, string $source, ?int $size = null): void
     {
         if ($this->module->getLogMode() === Module::LOG_OFF) {
             return;
@@ -72,10 +78,69 @@ class LogService
             $log->status = $status;
             $log->format = $format;
             $log->error = mb_substr($error->getMessage() ?: get_class($error), 0, 255);
+            $log->size_before = $size ?? ($file?->size !== null ? (int)$file->size : null);
+            $log->size_after = $status === MetadataLog::STATUS_PASSED ? $log->size_before : null;
             $this->save($log);
         } catch (Throwable $e) {
             Yii::error($e, 'metadata-cleaner');
         }
+    }
+
+    /**
+     * Copies post/comment, content and space of attached files into rows
+     * that do not have them yet. At upload time a file is not attached yet:
+     * HumHub links it to its post only when the post is saved.
+     *
+     * @return int number of updated rows
+     */
+    public function syncAttachments(): int
+    {
+        try {
+            $log = MetadataLog::tableName();
+
+            return Yii::$app->db->createCommand(
+                "UPDATE {$log} l
+                 INNER JOIN file f ON f.id = l.file_id
+                 LEFT JOIN content c ON c.id = f.content_id
+                 SET l.object_model = f.object_model,
+                     l.object_id = f.object_id,
+                     l.content_id = f.content_id,
+                     l.contentcontainer_id = c.contentcontainer_id
+                 WHERE l.object_id IS NULL AND f.object_id IS NOT NULL",
+            )->execute();
+        } catch (Throwable $e) {
+            Yii::error($e, 'metadata-cleaner');
+            return 0;
+        }
+    }
+
+    /**
+     * Deletes rows older than the retention period.
+     *
+     * @return int number of deleted rows
+     */
+    public function purgeExpired(): int
+    {
+        $limit = date('Y-m-d H:i:s', time() - $this->module->getLogRetentionDays() * 86400);
+
+        return MetadataLog::deleteAll(['<', 'created_at', $limit]);
+    }
+
+    /**
+     * JSON of the fields, shortened to fit the column.
+     *
+     * @param array<string, string> $fields
+     */
+    public static function encode(array $fields): string
+    {
+        $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE;
+        $json = (string)json_encode((object)$fields, $flags);
+        while (strlen($json) > self::MAX_METADATA_BYTES && $fields !== []) {
+            array_pop($fields);
+            $json = (string)json_encode((object)($fields + ['…' => 'truncated']), $flags);
+        }
+
+        return $json;
     }
 
     private function newRow(?File $file, string $fileName, string $source): MetadataLog
@@ -84,7 +149,13 @@ class LogService
         $log->file_id = $file?->id;
         $log->file_guid = $file?->guid;
         $log->file_name = mb_substr($fileName, 0, 255);
+        $log->mime_type = $file?->mime_type !== null ? mb_substr((string)$file->mime_type, 0, 150) : null;
         $log->source = $source;
+        if ($file !== null && $file->object_id !== null) {
+            $log->object_model = mb_substr((string)$file->object_model, 0, 100);
+            $log->object_id = (int)$file->object_id;
+            $log->content_id = $file->hasAttribute('content_id') && $file->content_id ? (int)$file->content_id : null;
+        }
         $log->created_by = $file?->created_by ?: $this->currentUserId();
         $log->created_at = date('Y-m-d H:i:s');
 
@@ -107,17 +178,5 @@ class LogService
         } catch (Throwable) {
             return null;
         }
-    }
-
-    /**
-     * Deletes log rows older than the retention period.
-     *
-     * @return int number of deleted rows
-     */
-    public function purgeExpired(): int
-    {
-        $limit = date('Y-m-d H:i:s', time() - $this->module->getLogRetentionDays() * 86400);
-
-        return MetadataLog::deleteAll(['<', 'created_at', $limit]);
     }
 }

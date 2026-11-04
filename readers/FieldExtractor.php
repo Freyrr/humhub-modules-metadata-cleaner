@@ -14,7 +14,7 @@ use humhub\modules\metadataCleaner\cleaners\MetadataBlock;
 class FieldExtractor
 {
     public const MAX_VALUE_LENGTH = 200;
-    public const MAX_FIELDS = 500;
+    public const MAX_FIELDS = 200;
 
     /**
      * @param MetadataBlock[] $blocks
