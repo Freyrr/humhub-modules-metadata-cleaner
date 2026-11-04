@@ -65,6 +65,7 @@ class MetadataCleanerService
             FormatDetector::FORMAT_HEIF => new HeifCleaner(),
             FormatDetector::FORMAT_VIDEO => new VideoCleaner(),
             FormatDetector::FORMAT_TIFF => new TiffCleaner(),
+            default => throw new CleanerException(sprintf('No cleaner for format "%s".', $format)),
         };
     }
 }

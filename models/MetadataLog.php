@@ -26,6 +26,7 @@ use Yii;
  * @property string|null $format
  * @property string $source
  * @property string|null $metadata JSON object, field name => value (values empty in "fields only" mode)
+ * @property string|null $content_hash SHA1 of the file content after cleaning, used to link the row to the stored file
  * @property int|null $created_by user who uploaded the file
  * @property string $created_at upload date
  *

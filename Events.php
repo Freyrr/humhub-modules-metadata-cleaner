@@ -15,7 +15,6 @@ use humhub\modules\metadataCleaner\models\MetadataLog;
 use humhub\modules\metadataCleaner\services\LogService;
 use Throwable;
 use Yii;
-use yii\helpers\Html;
 use yii\base\Event;
 use yii\base\UserException;
 use yii\web\UploadedFile;
@@ -37,20 +36,14 @@ use yii\web\UploadedFile;
 class Events
 {
     /**
-     * Results of uploads cleaned in this request, by SHA1 of the cleaned
-     * content, waiting for the stored-file event to log them with a file id.
+     * SHA1 of upload contents already handled by onFileUploadAfterValidate
+     * in this request, so the stored-file event does not clean them again.
+     * The log rows are written at validate time and linked to the File by
+     * LogService::claimUpload().
      *
-     * @var array<string, array{0: CleanResult, 1: int}> result and size before cleaning
+     * @var array<string, true>
      */
-    private static array $cleanedUploads = [];
-
-    /**
-     * Uploads that could not be cleaned and were passed on unchanged, by SHA1
-     * of their content, waiting for the stored-file event to log them.
-     *
-     * @var array<string, array{0: Throwable, 1: string|null, 2: int}> error, format, size
-     */
-    private static array $failedUploads = [];
+    private static array $handledUploads = [];
 
     public static function onFileUploadAfterValidate(Event $event): void
     {
@@ -79,7 +72,9 @@ class Events
             $size = (int)filesize($path);
             $file->uploadedFile->size = $size;
             $file->size = $size;
-            self::$cleanedUploads[(string)sha1_file($path)] = [$result, $sizeBefore];
+            $hash = (string)sha1_file($path);
+            self::$handledUploads[$hash] = true;
+            (new LogService($module))->recordUpload($file, $result, $sizeBefore, $size, $hash);
         } catch (Throwable $e) {
             self::logFailure($file->file_name, $e, $module);
             try {
@@ -88,7 +83,9 @@ class Events
                     $file->addError('uploadedFile', self::rejectMessage((string)$file->file_name));
                     (new LogService($module))->recordFailure(null, (string)$file->file_name, $format, $e, MetadataLog::STATUS_REJECTED, LogService::SOURCE_UPLOAD, (int)@filesize($file->uploadedFile->tempName));
                 } else {
-                    self::$failedUploads[(string)sha1_file($file->uploadedFile->tempName)] = [$e, $format, (int)@filesize($file->uploadedFile->tempName)];
+                    $hash = (string)sha1_file($file->uploadedFile->tempName);
+                    self::$handledUploads[$hash] = true;
+                    (new LogService($module))->recordFailure(null, (string)$file->file_name, $format, $e, MetadataLog::STATUS_PASSED, LogService::SOURCE_UPLOAD, (int)@filesize($file->uploadedFile->tempName), $hash);
                 }
             } catch (Throwable $logError) {
                 Yii::error($logError, 'metadata-cleaner');
@@ -113,16 +110,16 @@ class Events
         }
 
         $hash = (string)$file->hash_sha1;
-        if (isset(self::$cleanedUploads[$hash])) {
-            [$result, $sizeBefore] = self::$cleanedUploads[$hash];
-            unset(self::$cleanedUploads[$hash]);
-            (new LogService($module))->record($file, $result, LogService::SOURCE_UPLOAD, $sizeBefore);
+        $seen = isset(self::$handledUploads[$hash]);
+        unset(self::$handledUploads[$hash]);
+        $log = new LogService($module);
+        if ($seen) {
+            // The upload was cleaned in this request: link its log row.
+            $log->claimUpload($file);
             return;
         }
-        if (isset(self::$failedUploads[$hash])) {
-            [$error, $format, $size] = self::$failedUploads[$hash];
-            unset(self::$failedUploads[$hash]);
-            (new LogService($module))->recordFailure($file, (string)$file->file_name, $format, $error, MetadataLog::STATUS_PASSED, LogService::SOURCE_UPLOAD, $size);
+        if ($log->claimUpload($file)) {
+            // The upload was cleaned in an earlier request and is already clean.
             return;
         }
 
@@ -164,23 +161,14 @@ class Events
      */
     public static function cleanStoredFile(File $file, Module $module): CleanResult
     {
-        $store = $file->getStore();
-        $tmp = tempnam(sys_get_temp_dir(), 'mdc');
-        if ($tmp === false) {
-            throw new CleanerException('Cannot create temporary file.');
+        $tmp = self::copyToTemp($file, $module);
+        if ($tmp === null) {
+            return CleanResult::notHandled();
         }
         try {
-            $in = $store->getContentStream();
-            $out = fopen($tmp, 'wb');
-            stream_copy_to_stream($in, $out);
-            fclose($out);
-            if (is_resource($in)) {
-                fclose($in);
-            }
-
             $result = $module->getCleanerService()->cleanPath($tmp);
             if ($result->changed) {
-                $store->setByPath($tmp);
+                $file->getStore()->setByPath($tmp);
                 $file->updateAttributes([
                     'hash_sha1' => sha1_file($tmp),
                     'size' => filesize($tmp),
@@ -191,6 +179,57 @@ class Events
         } finally {
             @unlink($tmp);
         }
+    }
+
+    /**
+     * Copies the stored content of a file to a local temporary file.
+     *
+     * The first bytes of the stream are enough to tell the format of every
+     * file the module cleans: when they can be read and the format is not a
+     * handled one, the copy is skipped and null is returned. When they
+     * cannot be read, the whole content is copied and the detection runs on
+     * the temporary file as before.
+     *
+     * @return string|null path of the temporary file, or null when the copy was skipped
+     * @throws CleanerException
+     */
+    public static function copyToTemp(File $file, Module $module): ?string
+    {
+        $in = $file->getStore()->getContentStream();
+        if (!is_resource($in)) {
+            throw new CleanerException('Cannot read file.');
+        }
+        $head = @stream_get_contents($in, 64);
+        if (is_string($head)) {
+            $format = FormatDetector::detectFromBytes($head);
+            if ($format === null || !in_array($format, $module->getEnabledFormats(), true)) {
+                fclose($in);
+
+                return null;
+            }
+        } else {
+            @fseek($in, 0);
+        }
+
+        $tmp = tempnam(sys_get_temp_dir(), 'mdc');
+        if ($tmp === false) {
+            fclose($in);
+            throw new CleanerException('Cannot create temporary file.');
+        }
+        $out = fopen($tmp, 'wb');
+        if ($out === false) {
+            fclose($in);
+            @unlink($tmp);
+            throw new CleanerException('Cannot open temporary file.');
+        }
+        if ($head !== false && $head !== '') {
+            fwrite($out, $head);
+        }
+        stream_copy_to_stream($in, $out);
+        fclose($out);
+        fclose($in);
+
+        return $tmp;
     }
 
     public static function onCronDailyRun(Event $event): void
@@ -233,7 +272,7 @@ class Events
     private static function rejectMessage(string $fileName): string
     {
         return Yii::t('MetadataCleanerModule.base', 'The file {fileName} was rejected because its metadata could not be removed.', [
-            'fileName' => Html::encode($fileName),
+            'fileName' => $fileName,
         ]);
     }
 

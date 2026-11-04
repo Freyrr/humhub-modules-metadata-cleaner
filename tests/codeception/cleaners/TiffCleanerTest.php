@@ -52,10 +52,7 @@ class TiffCleanerTest extends CleanerTestCase
      */
     public function testDoesNotReencode(string $name): void
     {
-        exec('convert -version 2>/dev/null', $out, $code);
-        if ($code !== 0) {
-            $this->markTestSkipped('ImageMagick is not installed.');
-        }
+        $this->requireTool(self::magick() . ' -version', 'ImageMagick');
         $path = $this->copyFixture($name);
         $before = $this->decoded($path);
 
@@ -121,8 +118,22 @@ class TiffCleanerTest extends CleanerTestCase
      */
     private function decoded(string $path): string
     {
-        exec('convert ' . escapeshellarg($path) . ' -depth 8 rgb:- 2>/dev/null | md5sum', $out);
+        $tmp = tempnam(sys_get_temp_dir(), 'tiffrgb');
+        try {
+            exec(self::magick() . ' ' . escapeshellarg($path) . ' -depth 8 rgb:' . escapeshellarg($tmp) . ' 2>' . self::nullDevice());
 
-        return $out[0] ?? '';
+            return (string)md5_file($tmp);
+        } finally {
+            @unlink($tmp);
+        }
+    }
+
+    /**
+     * The ImageMagick command: "magick" on Windows (where "convert" is a
+     * system command), "convert" elsewhere.
+     */
+    private static function magick(): string
+    {
+        return PHP_OS_FAMILY === 'Windows' ? 'magick' : 'convert';
     }
 }

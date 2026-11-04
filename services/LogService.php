@@ -61,13 +61,88 @@ class LogService
     }
 
     /**
+     * Writes a row at upload time, when the cleaned file has no File record
+     * yet. The row is linked to the stored file later by claimUpload(),
+     * even when that happens in a different request.
+     *
+     * @param File $file the FileUpload model: its id is still null
+     * @param int $sizeBefore size of the upload before cleaning
+     * @param int $sizeAfter size of the cleaned upload
+     * @param string $contentHash SHA1 of the cleaned content
+     */
+    public function recordUpload(File $file, CleanResult $result, int $sizeBefore, int $sizeAfter, string $contentHash): void
+    {
+        $mode = $this->module->getLogMode();
+        if ($mode === Module::LOG_OFF || !$result->hadMetadata()) {
+            return;
+        }
+
+        try {
+            $fields = (new FieldExtractor())->extract($result->removed);
+            if ($mode !== Module::LOG_FIELDS_AND_VALUES) {
+                $fields = array_fill_keys(array_keys($fields), '');
+            }
+
+            $log = $this->newRow($file, (string)$file->file_name, self::SOURCE_UPLOAD);
+            $log->status = MetadataLog::STATUS_CLEANED;
+            $log->format = $result->format;
+            $log->metadata = self::encode($fields);
+            $log->size_before = $sizeBefore;
+            $log->size_after = $sizeAfter;
+            $log->content_hash = $contentHash;
+            $this->save($log);
+        } catch (Throwable $e) {
+            Yii::error($e, 'metadata-cleaner');
+        }
+    }
+
+    /**
+     * Links a stored file to the log row written when its upload was
+     * cleaned. Matching is by content hash and uploader, so it works across
+     * requests.
+     *
+     * @return bool true when a pending upload row was found and linked
+     */
+    public function claimUpload(File $file): bool
+    {
+        if ($this->module->getLogMode() === Module::LOG_OFF || $file->hash_sha1 === null || $file->hash_sha1 === '') {
+            return false;
+        }
+
+        try {
+            $query = MetadataLog::find()
+                ->where(['content_hash' => $file->hash_sha1, 'source' => self::SOURCE_UPLOAD, 'file_id' => null])
+                ->orderBy(['id' => SORT_ASC]);
+            if ($file->created_by !== null) {
+                $query->andWhere(['created_by' => $file->created_by]);
+            }
+            $log = $query->one();
+            if ($log === null) {
+                return false;
+            }
+            $log->updateAttributes([
+                'file_id' => $file->id,
+                'file_guid' => $file->guid,
+                'mime_type' => $log->mime_type ?? ($file->mime_type !== null ? mb_substr((string)$file->mime_type, 0, 150) : null),
+            ]);
+
+            return true;
+        } catch (Throwable $e) {
+            Yii::error($e, 'metadata-cleaner');
+
+            return false;
+        }
+    }
+
+    /**
      * Writes a row for a file that could not be cleaned, whether it had
      * metadata or not, unless the log is switched off.
      *
      * @param File|null $file null when the upload was rejected before a record existed
      * @param string $status MetadataLog::STATUS_PASSED or MetadataLog::STATUS_REJECTED
+     * @param string|null $contentHash SHA1 of the content stored (unchanged upload), to link the row later
      */
-    public function recordFailure(?File $file, string $fileName, ?string $format, Throwable $error, string $status, string $source, ?int $size = null): void
+    public function recordFailure(?File $file, string $fileName, ?string $format, Throwable $error, string $status, string $source, ?int $size = null, ?string $contentHash = null): void
     {
         if ($this->module->getLogMode() === Module::LOG_OFF) {
             return;
@@ -80,6 +155,7 @@ class LogService
             $log->error = mb_substr($error->getMessage() ?: get_class($error), 0, 255);
             $log->size_before = $size ?? ($file?->size !== null ? (int)$file->size : null);
             $log->size_after = $status === MetadataLog::STATUS_PASSED ? $log->size_before : null;
+            $log->content_hash = $contentHash;
             $this->save($log);
         } catch (Throwable $e) {
             Yii::error($e, 'metadata-cleaner');

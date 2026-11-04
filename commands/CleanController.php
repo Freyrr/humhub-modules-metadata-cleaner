@@ -8,10 +8,12 @@ namespace humhub\modules\metadataCleaner\commands;
 
 use humhub\modules\file\models\File;
 use humhub\modules\file\models\FileHistory;
+use humhub\modules\metadataCleaner\cleaners\CleanResult;
 use humhub\modules\metadataCleaner\Events;
 use humhub\modules\metadataCleaner\models\MetadataLog;
 use humhub\modules\metadataCleaner\Module;
 use humhub\modules\metadataCleaner\services\LogService;
+use humhub\modules\metadataCleaner\services\MetadataCleanerService;
 use Throwable;
 use Yii;
 use yii\console\Controller;
@@ -121,18 +123,13 @@ class CleanController extends Controller
         return ExitCode::OK;
     }
 
-    private function dryRunFile(File $file, $service)
+    private function dryRunFile(File $file, MetadataCleanerService $service): CleanResult
     {
-        $tmp = tempnam(sys_get_temp_dir(), 'mdc');
+        $tmp = Events::copyToTemp($file, $this->getModule());
+        if ($tmp === null) {
+            return CleanResult::notHandled();
+        }
         try {
-            $in = $file->getStore()->getContentStream();
-            $out = fopen($tmp, 'wb');
-            stream_copy_to_stream($in, $out);
-            fclose($out);
-            if (is_resource($in)) {
-                fclose($in);
-            }
-
             return $service->cleanPath($tmp);
         } finally {
             @unlink($tmp);

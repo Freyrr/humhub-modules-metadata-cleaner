@@ -49,10 +49,26 @@ abstract class CleanerTestCase extends Unit
 
     protected function requireExiftool(): void
     {
-        exec('exiftool -ver 2>/dev/null', $out, $code);
+        $this->requireTool('exiftool -ver', 'exiftool');
+    }
+
+    /**
+     * Skips the test when $command fails, meaning the tool is not installed.
+     */
+    protected function requireTool(string $command, string $name): void
+    {
+        exec($command . ' 2>' . self::nullDevice(), $out, $code);
         if ($code !== 0) {
-            $this->markTestSkipped('exiftool is not installed.');
+            $this->markTestSkipped($name . ' is not installed.');
         }
+    }
+
+    /**
+     * Where to send stderr so that it is discarded on this OS.
+     */
+    protected static function nullDevice(): string
+    {
+        return PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null';
     }
 
     /**
@@ -63,7 +79,7 @@ abstract class CleanerTestCase extends Unit
      */
     protected function exiftoolTags(string $path): array
     {
-        exec('exiftool -j -a -G1 -s ' . escapeshellarg($path) . ' 2>/dev/null', $out);
+        exec('exiftool -j -a -G1 -s ' . escapeshellarg($path) . ' 2>' . self::nullDevice(), $out);
         $data = json_decode(implode("\n", $out), true)[0] ?? [];
 
         return array_filter(

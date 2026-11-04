@@ -78,10 +78,7 @@ class VideoCleanerTest extends CleanerTestCase
 
     public function testCleanedVideoStillDecodes(): void
     {
-        exec('ffmpeg -version 2>/dev/null', $out, $code);
-        if ($code !== 0) {
-            $this->markTestSkipped('ffmpeg is not installed.');
-        }
+        $this->requireTool('ffmpeg -version', 'ffmpeg');
         foreach (array_keys(self::videos()) as $label) {
             $path = $this->copyFixture(self::videos()[$label][0]);
             (new MetadataCleanerService())->cleanPath($path);
