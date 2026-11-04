@@ -4,6 +4,7 @@ return [
     '<strong>Log</strong>' => '<strong>Journal</strong>',
     '<strong>Metadata</strong> Cleaner' => '<strong>Metadata</strong> Cleaner',
     'Accept the file unchanged' => 'Accepter le fichier tel quel',
+    'Audio' => 'Audio',
     'Back to the log' => 'Retour au journal',
     'Cleaned' => 'Nettoyé',
     'EXIF, XMP and IPTC metadata (GPS included) are removed from every uploaded image and video, without re-encoding the file.' => 'Les métadonnées EXIF, XMP et IPTC (GPS compris) sont supprimées de toutes les images et vidéos envoyées, sans réencoder le fichier.',

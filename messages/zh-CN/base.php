@@ -4,6 +4,7 @@ return [
     '<strong>Log</strong>' => '<strong>日志</strong>',
     '<strong>Metadata</strong> Cleaner' => '<strong>Metadata</strong> Cleaner',
     'Accept the file unchanged' => '原样接受文件',
+    'Audio' => '音频',
     'Back to the log' => '返回日志',
     'Cleaned' => '已清理',
     'EXIF, XMP and IPTC metadata (GPS included) are removed from every uploaded image and video, without re-encoding the file.' => '从所有上传的图片和视频中删除 EXIF、XMP 和 IPTC 元数据（包括 GPS），不重新编码文件。',

@@ -7,7 +7,7 @@
 namespace humhub\modules\metadataCleaner\cleaners;
 
 /**
- * Removes metadata from MP4, MOV and 3GP files.
+ * Removes metadata from MP4, MOV, 3GP and M4A files.
  *
  * Removed: the "udta" and "meta" boxes of the movie and of every track
  * (GPS ©xyz and loci, make, model, software, Apple keys/ilst...), XMP "uuid"
@@ -38,6 +38,13 @@ final class VideoCleaner implements CleanerInterface
 
     private const MAX_FIELD_BYTES = 4096;
 
+    /**
+     * @param string $format format group reported in the result (video, or audio for M4A)
+     */
+    public function __construct(private readonly string $format = FormatDetector::FORMAT_VIDEO)
+    {
+    }
+
     public function clean(string $path, CleanOptions $options): CleanResult
     {
         $fh = @fopen($path, 'rb');
@@ -52,11 +59,11 @@ final class VideoCleaner implements CleanerInterface
         }
 
         if ($patches === []) {
-            return new CleanResult(FormatDetector::FORMAT_VIDEO, false, $removed);
+            return new CleanResult($this->format, false, $removed);
         }
         $this->applyPatches($path, $patches);
 
-        return new CleanResult(FormatDetector::FORMAT_VIDEO, true, $removed);
+        return new CleanResult($this->format, true, $removed);
     }
 
     /**

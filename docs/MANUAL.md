@@ -20,11 +20,15 @@
 | PNG | eXIf, tEXt, zTXt, iTXt (XMP), tIME and unknown chunks | image, transparency, colour and APNG animation chunks |
 | WebP | EXIF and XMP chunks, unknown chunks | image, alpha, ICC profile, animation |
 | GIF | comments, application extensions (XMP) | images, palettes, animation loop, ICC profile |
-| HEIC/HEIF/AVIF | EXIF and XMP items (bytes zeroed, items hidden) | all image items and properties, including rotation |
-| MP4/MOV/3GP | udta and meta boxes of the movie and of each track (GPS, device, Apple keys), XMP | all tracks and media data |
+| HEIC/HEIF/AVIF | EXIF and XMP items (bytes zeroed, items hidden), the short video of motion photos (`mpvd` box) | all image items and properties, including rotation |
+| MP4/MOV/3GP, M4A | udta and meta boxes of the movie and of each track (GPS, device, Apple keys), XMP | all tracks and media data |
+| WebM/MKV | Tags, Attachments (cover pictures, files), segment title and date, track names; the muxing and writing application names are emptied | all tracks, clusters, cues and chapters |
+| MP3, AAC (ADTS) | ID3v2, ID3v1, APEv2 and Lyrics3 tags (title, artist, comments, pictures, encoder, dates) | audio frames |
+| FLAC | Vorbis comments, pictures and application blocks (turned into padding) | stream info, seek table, cue sheet, audio frames |
+| Ogg (Vorbis, Opus, Theora, Speex, FLAC) | all comments of the comment header (the encoder vendor string is kept) | all packets; page checksums are recomputed |
 | TIFF | all tags not needed to decode the image (EXIF, GPS, XMP, IPTC, device and author tags) | image data and the tags that describe it |
 
-Files of any other type (documents, archives, audio...) are not changed.
+Files of any other type are not changed.
 
 ## Console commands
 
