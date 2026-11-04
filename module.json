@@ -1,6 +1,6 @@
 {
     "id": "metadata-cleaner",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "name": "Metadata Cleaner",
     "description": "Removes metadata (EXIF, XMP, IPTC, GPS, author and device data) from uploaded images, videos, audio files and documents without re-encoding them.",
     "humhub": {
