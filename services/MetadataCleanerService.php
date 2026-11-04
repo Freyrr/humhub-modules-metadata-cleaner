@@ -78,6 +78,7 @@ class MetadataCleanerService
             FormatDetector::TYPE_FLAC => new FlacCleaner(),
             FormatDetector::TYPE_OGG => new OggCleaner(),
             FormatDetector::FORMAT_TIFF => new TiffCleaner(),
+            FormatDetector::TYPE_DNG => new TiffCleaner(dng: true),
         };
     }
 }
