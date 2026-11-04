@@ -42,7 +42,7 @@ Note that the optional log of the module can itself store personal data (for exa
 
 ## Features
 
-- Cleans **JPEG, PNG/APNG, WebP, GIF, HEIC/HEIF/AVIF and TIFF** images, **MP4/MOV/3GP and WebM/MKV** videos and **M4A, MP3, AAC, FLAC, Ogg and Opus** audio files, including the short videos of motion photos. Each file type can be switched on or off; all are on by default.
+- Cleans **JPEG, PNG/APNG, WebP, GIF, HEIC/HEIF/AVIF, TIFF and DNG raw** images, **MP4/MOV/3GP and WebM/MKV** videos and **M4A, MP3, AAC, FLAC, Ogg and Opus** audio files, including the short videos of motion photos. Each file type can be switched on or off; all are on by default.
 - The file type is detected from the file content, never from its name, so a renamed file is still cleaned.
 - Keeps what is needed to show the file correctly: colour profiles and, optionally, the EXIF Orientation tag (without it some phone photos are shown rotated).
 - Works on every upload path: the web uploader, the REST API, imports and other modules.

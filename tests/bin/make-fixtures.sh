@@ -2,7 +2,8 @@
 # Regenerates the synthetic test files in tests/codeception/_data/fixtures.
 # Needs PHP with GD and exiftool. Only used for development, never at runtime.
 set -euo pipefail
-cd "$(dirname "$0")/../codeception/_data"
+BIN="$(cd "$(dirname "$0")" && pwd)"
+cd "$BIN/../codeception/_data"
 mkdir -p fixtures && cd fixtures
 rm -f ./*
 
@@ -132,3 +133,11 @@ open('motion.heic','wb').write(open('meta.heic','rb').read()+struct.pack('>I',8+
 PY
 head -c 40 meta.mp3 > broken.mp3
 for f in meta.flac meta.ogg meta.opus meta.webm meta.mkv meta.m4a; do head -c 700 "$f" > "broken.${f#meta.}"; done
+
+# DNG raw image (written by tests/bin/make-dng.py), with metadata added by exiftool.
+python3 "$BIN/make-dng.py"
+cp plain.dng meta.dng
+exiftool -q -overwrite_original -GPSLatitude=45.4642 -GPSLatitudeRef=N -GPSLongitude=9.19 -GPSLongitudeRef=E \
+    -Make=TestPhone -Model=X1 -Artist="Mario Rossi" -SerialNumber=SN12345 -DateTimeOriginal="2026:11:04 08:00:00" \
+    -OriginalRawFileName=IMG_secret.CR2 -XMP:Creator="Mario Rossi" meta.dng
+head -c 300 meta.dng > broken.dng

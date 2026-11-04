@@ -20,11 +20,12 @@ final class FormatDetector
     public const FORMAT_VIDEO = 'video';
     public const FORMAT_TIFF = 'tiff';
     public const FORMAT_AUDIO = 'audio';
+    public const FORMAT_RAW = 'raw';
 
     /** Format groups, as switched on and off in the settings. */
     public const ALL_FORMATS = [
         self::FORMAT_JPEG, self::FORMAT_PNG, self::FORMAT_WEBP, self::FORMAT_GIF,
-        self::FORMAT_HEIF, self::FORMAT_VIDEO, self::FORMAT_AUDIO, self::FORMAT_TIFF,
+        self::FORMAT_HEIF, self::FORMAT_VIDEO, self::FORMAT_AUDIO, self::FORMAT_TIFF, self::FORMAT_RAW,
     ];
 
     /** Container types inside the groups, used to pick the cleaner. */
@@ -34,6 +35,7 @@ final class FormatDetector
     public const TYPE_MP3 = 'mp3';
     public const TYPE_FLAC = 'flac';
     public const TYPE_OGG = 'ogg';
+    public const TYPE_DNG = 'dng';
 
     private const TYPE_GROUPS = [
         self::TYPE_MP4 => self::FORMAT_VIDEO,
@@ -42,7 +44,15 @@ final class FormatDetector
         self::TYPE_MP3 => self::FORMAT_AUDIO,
         self::TYPE_FLAC => self::FORMAT_AUDIO,
         self::TYPE_OGG => self::FORMAT_AUDIO,
+        self::TYPE_DNG => self::FORMAT_RAW,
     ];
+
+    private const TAG_DNG_VERSION = 0xC612;
+    private const TAG_SUB_IFDS = 0x014A;
+    private const TAG_MAKE = 0x010F;
+
+    /** Largest first image directory read to tell TIFF, DNG and camera RAW apart. */
+    private const MAX_IFD0_BYTES = 65536;
 
     /** ftyp major brands of audio-only MPEG-4 files (M4A, M4B audiobooks...). */
     private const AUDIO_BRANDS = ['M4A ', 'M4B ', 'M4P ', 'F4A ', 'F4B '];
@@ -73,10 +83,51 @@ final class FormatDetector
         if ($fh === false) {
             throw new CleanerException('Cannot read file.');
         }
-        $head = (string)fread($fh, 64);
-        fclose($fh);
+        try {
+            $head = (string)fread($fh, 64);
+            $type = self::detectTypeFromBytes($head);
+            if ($type === self::FORMAT_TIFF) {
+                $type = self::tiffType($fh, $head);
+            }
+        } finally {
+            fclose($fh);
+        }
 
-        return self::detectTypeFromBytes($head);
+        return $type;
+    }
+
+    /**
+     * Tells plain TIFF, DNG and other camera RAW files apart. Camera RAW
+     * files (CR2, NEF, ARW...) also start like TIFF but need their private
+     * tags to be decoded, so they are not handled (null).
+     *
+     * @param resource $fh
+     */
+    private static function tiffType($fh, string $head): ?string
+    {
+        if (substr($head, 8, 2) === 'CR') {
+            return null;
+        }
+        $u16 = $head[0] === 'I' ? 'v' : 'n';
+        $u32 = $head[0] === 'I' ? 'V' : 'N';
+        $offset = unpack($u32, $head, 4)[1];
+        if ($offset < 8 || fseek($fh, $offset) !== 0) {
+            return self::FORMAT_TIFF;
+        }
+        $count = unpack($u16, str_pad((string)fread($fh, 2), 2, "\x00"))[1];
+        $entries = (string)fread($fh, min(self::MAX_IFD0_BYTES, $count * 12));
+        $tags = [];
+        for ($p = 0; $p + 12 <= strlen($entries); $p += 12) {
+            $tags[unpack($u16, $entries, $p)[1]] = true;
+        }
+        if (isset($tags[self::TAG_DNG_VERSION])) {
+            return self::TYPE_DNG;
+        }
+        if (isset($tags[self::TAG_SUB_IFDS]) && isset($tags[self::TAG_MAKE])) {
+            return null;
+        }
+
+        return self::FORMAT_TIFF;
     }
 
     public static function group(?string $type): ?string
