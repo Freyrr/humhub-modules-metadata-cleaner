@@ -25,11 +25,7 @@ use humhub\modules\user\models\User;
  * @property string|null $format
  * @property string $source
  * @property string|null $metadata JSON object, field name => value (values empty in "fields only" mode)
- * @property string|null $object_model class of the record the file is attached to (post, comment...)
- * @property int|null $object_id id of that record
- * @property int|null $content_id content the file belongs to
- * @property int|null $contentcontainer_id space or profile of that content
- * @property int|null $created_by
+ * @property int|null $created_by user who uploaded the file
  * @property string $created_at upload date
  *
  * @property-read File|null $file

@@ -200,9 +200,7 @@ class Events
             return;
         }
         try {
-            $log = new LogService($module);
-            $log->syncAttachments();
-            $log->purgeExpired();
+            (new LogService($module))->purgeExpired();
         } catch (Throwable $e) {
             Yii::error($e, 'metadata-cleaner');
         }

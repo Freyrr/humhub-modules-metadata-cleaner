@@ -87,34 +87,6 @@ class LogService
     }
 
     /**
-     * Copies post/comment, content and space of attached files into rows
-     * that do not have them yet. At upload time a file is not attached yet:
-     * HumHub links it to its post only when the post is saved.
-     *
-     * @return int number of updated rows
-     */
-    public function syncAttachments(): int
-    {
-        try {
-            $log = MetadataLog::tableName();
-
-            return Yii::$app->db->createCommand(
-                "UPDATE {$log} l
-                 INNER JOIN file f ON f.id = l.file_id
-                 LEFT JOIN content c ON c.id = f.content_id
-                 SET l.object_model = f.object_model,
-                     l.object_id = f.object_id,
-                     l.content_id = f.content_id,
-                     l.contentcontainer_id = c.contentcontainer_id
-                 WHERE l.object_id IS NULL AND f.object_id IS NOT NULL",
-            )->execute();
-        } catch (Throwable $e) {
-            Yii::error($e, 'metadata-cleaner');
-            return 0;
-        }
-    }
-
-    /**
      * Deletes rows older than the retention period.
      *
      * @return int number of deleted rows
@@ -151,11 +123,6 @@ class LogService
         $log->file_name = mb_substr($fileName, 0, 255);
         $log->mime_type = $file?->mime_type !== null ? mb_substr((string)$file->mime_type, 0, 150) : null;
         $log->source = $source;
-        if ($file !== null && $file->object_id !== null) {
-            $log->object_model = mb_substr((string)$file->object_model, 0, 100);
-            $log->object_id = (int)$file->object_id;
-            $log->content_id = $file->hasAttribute('content_id') && $file->content_id ? (int)$file->content_id : null;
-        }
         $log->created_by = $file?->created_by ?: $this->currentUserId();
         $log->created_at = date('Y-m-d H:i:s');
 
