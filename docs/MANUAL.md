@@ -20,19 +20,23 @@
 | PNG | eXIf, tEXt, zTXt, iTXt (XMP), tIME and unknown chunks | image, transparency, colour and APNG animation chunks |
 | WebP | EXIF and XMP chunks, unknown chunks | image, alpha, ICC profile, animation |
 | GIF | comments, application extensions (XMP) | images, palettes, animation loop, ICC profile |
-| HEIC/HEIF/AVIF | EXIF and XMP items (bytes zeroed, items hidden) | all image items and properties, including rotation |
-| MP4/MOV/3GP | udta and meta boxes of the movie and of each track (GPS, device, Apple keys), XMP | all tracks and media data |
+| HEIC/HEIF/AVIF | EXIF and XMP items (bytes zeroed, items hidden), the short video of motion photos (`mpvd` box) | all image items and properties, including rotation |
+| MP4/MOV/3GP, M4A | udta and meta boxes of the movie and of each track (GPS, device, Apple keys), XMP | all tracks and media data |
+| WebM/MKV | Tags, Attachments (cover pictures, files), segment title and date, track names; the muxing and writing application names are emptied | all tracks, clusters, cues and chapters |
+| MP3, AAC (ADTS) | ID3v2, ID3v1, APEv2 and Lyrics3 tags (title, artist, comments, pictures, encoder, dates) | audio frames |
+| FLAC | Vorbis comments, pictures and application blocks (turned into padding) | stream info, seek table, cue sheet, audio frames |
+| Ogg (Vorbis, Opus, Theora, Speex, FLAC) | all comments of the comment header (the encoder vendor string is kept) | all packets; page checksums are recomputed |
 | TIFF | all tags not needed to decode the image (EXIF, GPS, XMP, IPTC, device and author tags) | image data and the tags that describe it |
+| RAW DNG | as TIFF, plus maker notes (DNGPrivateData), original raw file name and data, preview application, settings and date | raw image data and the DNG tags needed to develop it (CFA layout, colour matrices, calibration, UniqueCameraModel, opcodes) |
 
-Files of any other type (documents, archives, audio...) are not changed.
+| PDF | document information dictionaries (author, title, subject, keywords, creator, producer, dates, custom entries) of every revision, also inside compressed object streams; every XMP metadata stream | pages, fonts, images and the file structure: everything is overwritten in place with data of the same size |
+| Office (DOCX, XLSX, PPTX...) | docProps/core.xml, app.xml and custom.xml (author, last modified by, company, manager, template, editing time, custom properties) | every other part of the document, copied byte for byte |
+| OpenDocument (ODT, ODS, ODP...) | meta.xml (creator, dates, editing time, generator, user-defined fields) | every other part of the document, copied byte for byte |
+| SVG | metadata, comments, editor data (Inkscape, Sodipodi, Illustrator, Sketch...), scripts, event attributes, javascript: links, foreignObject, embedded frames | the drawing |
 
-## Console commands
+Files of any other type are not changed. See the README for what the module does not cover.
 
-```
-php yii metadata-cleaner/clean [--dry-run] [--batch=100] [--from-id=0]
-```
-
-Cleans the files already stored, for example those uploaded before the module was enabled. Previews are deleted and re-created by HumHub when needed. `--dry-run` only lists the files that would change. `--from-id` resumes an interrupted run after the given file id.
+## Console command
 
 ```
 php yii metadata-cleaner/purge-log

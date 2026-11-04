@@ -17,6 +17,8 @@ namespace humhub\modules\metadataCleaner\cleaners;
  *   knows, so readers skip it as the HEIF standard requires for unknown items.
  * Nothing changes size, so the image items stay exactly where they were.
  * Rotation and mirroring live in item properties (irot/imir) and are kept.
+ * The short video of motion photos, stored in a top-level "mpvd" box, is
+ * removed the same way: the box becomes a zero-filled "free" box.
  */
 final class HeifCleaner implements CleanerInterface
 {
@@ -122,6 +124,14 @@ final class HeifCleaner implements CleanerInterface
             if ($box['type'] === 'uuid' && $box['uuid'] === IsoBmff::XMP_UUID) {
                 $patches[$box['start'] + $box['header']] = $box['size'] - $box['header'];
                 $removed[] = new MetadataBlock(MetadataBlock::TYPE_XMP, 'uuid:XMP', $box['size']);
+            }
+            // Motion photos: the video (with its own metadata) is appended in an "mpvd" box.
+            if ($box['type'] === 'mpvd') {
+                $patches[$box['start'] + 4] = 'free';
+                if ($box['size'] > $box['header']) {
+                    $patches[$box['start'] + $box['header']] = $box['size'] - $box['header'];
+                }
+                $removed[] = new MetadataBlock(MetadataBlock::TYPE_OTHER, 'mpvd:MotionPhotoVideo', $box['size']);
             }
         }
 

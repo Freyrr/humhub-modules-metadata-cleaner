@@ -26,6 +26,10 @@ class ExifReader
             0x0100 => 'ImageWidth', 0x0101 => 'ImageHeight', 0x0102 => 'BitsPerSample', 0x0106 => 'PhotometricInterpretation',
             0x0111 => 'StripOffsets', 0x0115 => 'SamplesPerPixel', 0x0116 => 'RowsPerStrip', 0x0117 => 'StripByteCounts',
             0x011C => 'PlanarConfiguration', 0x0153 => 'SampleFormat', 0x010D => 'DocumentName', 0x011D => 'PageName',
+            0xC615 => 'LocalizedCameraModel', 0xC634 => 'DNGPrivateData', 0xC65D => 'RawDataUniqueID',
+            0xC68B => 'OriginalRawFileName', 0xC68C => 'OriginalRawFileData', 0xC68E => 'OriginalRawFileDigest',
+            0xC6FE => 'ProfileCopyright', 0xC716 => 'PreviewApplicationName', 0xC717 => 'PreviewApplicationVersion',
+            0xC718 => 'PreviewSettingsName', 0xC719 => 'PreviewSettingsDigest', 0xC71B => 'PreviewDateTime',
             0x9C9B => 'XPTitle', 0x9C9C => 'XPComment', 0x9C9D => 'XPAuthor', 0x9C9E => 'XPKeywords', 0x9C9F => 'XPSubject',
         ],
         'ExifIFD' => [
@@ -51,7 +55,7 @@ class ExifReader
     ];
 
     /** Tags whose value is binary or huge and is never logged. */
-    private const NO_VALUE = [0x927C, 0x0201, 0x0202, 0x02BC, 0x83BB, 0x8649, 0x8773, 0x0111, 0x0117, 0x0144, 0x0145];
+    private const NO_VALUE = [0xC634, 0xC68C, 0x927C, 0x0201, 0x0202, 0x02BC, 0x83BB, 0x8649, 0x8773, 0x0111, 0x0117, 0x0144, 0x0145];
 
     public static function tagName(string $dictionary, int $tag): string
     {

@@ -4,6 +4,7 @@ return [
     '<strong>Log</strong>' => '<strong>Registo</strong>',
     '<strong>Metadata</strong> Cleaner' => '<strong>Metadata</strong> Cleaner',
     'Accept the file unchanged' => 'Aceitar o ficheiro sem alterações',
+    'Audio' => 'Áudio',
     'Back to the log' => 'Voltar ao registo',
     'Cleaned' => 'Limpo',
     'EXIF, XMP and IPTC metadata (GPS included) are removed from every uploaded image and video, without re-encoding the file.' => 'Os metadados EXIF, XMP e IPTC (incluindo o GPS) são removidos de todas as imagens e vídeos carregados, sem recodificar o ficheiro.',

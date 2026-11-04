@@ -17,6 +17,11 @@ use humhub\modules\metadataCleaner\readers\ExifReader;
  * Interoperability directories and the values of the removed tags are then
  * overwritten with zeros. Image strips and tiles stay where they are.
  * BigTIFF is not supported.
+ *
+ * DNG raw files are cleaned the same way, but also keep the DNG tags needed
+ * to develop the raw image (colour matrices, calibration, UniqueCameraModel,
+ * opcodes...). Maker notes, the original file name and data, and preview
+ * settings and dates are removed.
  */
 final class TiffCleaner implements CleanerInterface
 {
@@ -33,6 +38,18 @@ final class TiffCleaner implements CleanerInterface
         0x0128, 0x0129, 0x012D, 0x013D, 0x013E, 0x013F, 0x0140, 0x0141, 0x0142, 0x0143, 0x0144, 0x0145, 0x014C,
         0x014D, 0x014E, 0x0150, 0x0151, 0x0152, 0x0153, 0x0154, 0x0155, 0x0156, 0x015B, 0x0200, 0x0201,
         0x0202, 0x0203, 0x0205, 0x0206, 0x0207, 0x0208, 0x0209, 0x0211, 0x0212, 0x0213, 0x0214, 0x8773,
+    ];
+
+    /** DNG: tags of the CFA layout, and the DNG range 0xC612-0xC7FF, are kept too... */
+    private const DNG_KEEP = [0x828D, 0x828E, 0x9216, 0x9217];
+    private const DNG_RANGE = [0xC612, 0xC7FF];
+
+    /** ...except these, which hold names, dates, maker data or the original file. */
+    private const DNG_DROP = [
+        0xC615 /* LocalizedCameraModel */, 0xC634 /* DNGPrivateData (maker notes) */, 0xC65D /* RawDataUniqueID */,
+        0xC68B /* OriginalRawFileName */, 0xC68C /* OriginalRawFileData */, 0xC68E /* OriginalRawFileDigest */,
+        0xC6FE /* ProfileCopyright */, 0xC716 /* PreviewApplicationName */, 0xC717 /* PreviewApplicationVersion */,
+        0xC718 /* PreviewSettingsName */, 0xC719 /* PreviewSettingsDigest */, 0xC71B /* PreviewDateTime */,
     ];
 
     /** Pairs of (offsets tag, byte counts tag) that point to image data. */
@@ -55,6 +72,13 @@ final class TiffCleaner implements CleanerInterface
     /** @var array<string, string> */
     private array $fields = [];
     private bool $keepOrientation = true;
+
+    /**
+     * @param bool $dng keep the tags a DNG raw image needs to be developed
+     */
+    public function __construct(private readonly bool $dng = false)
+    {
+    }
 
     public function clean(string $path, CleanOptions $options): CleanResult
     {
@@ -90,7 +114,7 @@ final class TiffCleaner implements CleanerInterface
             $changed = $changed || $ifd['dropped'] || $ifd['subChanged'];
         }
         if (!$changed) {
-            return new CleanResult(FormatDetector::FORMAT_TIFF, false);
+            return new CleanResult($this->dng ? FormatDetector::FORMAT_RAW : FormatDetector::FORMAT_TIFF, false);
         }
 
         // Write the new directories at the end of the file.
@@ -113,7 +137,7 @@ final class TiffCleaner implements CleanerInterface
 
         FileIo::replace($path, $out);
 
-        return new CleanResult(FormatDetector::FORMAT_TIFF, true, [
+        return new CleanResult($this->dng ? FormatDetector::FORMAT_RAW : FormatDetector::FORMAT_TIFF, true, [
             new MetadataBlock(MetadataBlock::TYPE_EXIF, 'TIFF', 0, null, $options->collectPayloads ? $this->fieldValues() : []),
         ]);
     }
@@ -162,7 +186,7 @@ final class TiffCleaner implements CleanerInterface
                 $kept[] = $entry;
                 continue;
             }
-            if (in_array($tag, self::KEEP, true) || ($tag === self::TAG_ORIENTATION && $this->keepOrientation)) {
+            if ($this->keeps($tag)) {
                 $kept[] = $entry;
                 if ($entry['outOfLine']) {
                     $this->protected[] = [$entry['dataOffset'], $entry['dataLength']];
@@ -312,6 +336,16 @@ final class TiffCleaner implements CleanerInterface
         $out .= pack($this->u16, count($entries)) . implode('', $entries) . pack($this->u32, 0);
 
         return $offset;
+    }
+
+    private function keeps(int $tag): bool
+    {
+        if (in_array($tag, self::KEEP, true) || ($tag === self::TAG_ORIENTATION && $this->keepOrientation)) {
+            return true;
+        }
+
+        return $this->dng && (in_array($tag, self::DNG_KEEP, true)
+            || ($tag >= self::DNG_RANGE[0] && $tag <= self::DNG_RANGE[1] && !in_array($tag, self::DNG_DROP, true)));
     }
 
     private function overlapsProtected(int $start, int $length): bool

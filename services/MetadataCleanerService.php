@@ -10,11 +10,18 @@ use humhub\modules\metadataCleaner\cleaners\CleanerException;
 use humhub\modules\metadataCleaner\cleaners\CleanerInterface;
 use humhub\modules\metadataCleaner\cleaners\CleanOptions;
 use humhub\modules\metadataCleaner\cleaners\CleanResult;
+use humhub\modules\metadataCleaner\cleaners\FlacCleaner;
 use humhub\modules\metadataCleaner\cleaners\FormatDetector;
 use humhub\modules\metadataCleaner\cleaners\GifCleaner;
 use humhub\modules\metadataCleaner\cleaners\HeifCleaner;
 use humhub\modules\metadataCleaner\cleaners\JpegCleaner;
+use humhub\modules\metadataCleaner\cleaners\MatroskaCleaner;
+use humhub\modules\metadataCleaner\cleaners\Mp3Cleaner;
+use humhub\modules\metadataCleaner\cleaners\OfficeCleaner;
+use humhub\modules\metadataCleaner\cleaners\OggCleaner;
+use humhub\modules\metadataCleaner\cleaners\PdfCleaner;
 use humhub\modules\metadataCleaner\cleaners\PngCleaner;
+use humhub\modules\metadataCleaner\cleaners\SvgCleaner;
 use humhub\modules\metadataCleaner\cleaners\TiffCleaner;
 use humhub\modules\metadataCleaner\cleaners\VideoCleaner;
 use humhub\modules\metadataCleaner\cleaners\WebpCleaner;
@@ -44,28 +51,40 @@ class MetadataCleanerService
      */
     public function cleanPath(string $path): CleanResult
     {
-        $format = FormatDetector::detect($path);
+        $type = FormatDetector::detectType($path);
+        $format = FormatDetector::group($type);
         if ($format === null || !in_array($format, $this->formats, true)) {
             return CleanResult::notHandled();
         }
 
-        return $this->getCleaner($format)->clean($path, $this->options);
+        return $this->getCleaner($type)->clean($path, $this->options);
     }
 
     /**
      * Cleaner for a format detected by FormatDetector.
+     *
+     * @param string $type a FormatDetector FORMAT_* or TYPE_* value
      */
-    public function getCleaner(string $format): CleanerInterface
+    public function getCleaner(string $type): CleanerInterface
     {
-        return match ($format) {
+        return match ($type) {
             FormatDetector::FORMAT_JPEG => new JpegCleaner(),
             FormatDetector::FORMAT_PNG => new PngCleaner(),
             FormatDetector::FORMAT_WEBP => new WebpCleaner(),
             FormatDetector::FORMAT_GIF => new GifCleaner(),
             FormatDetector::FORMAT_HEIF => new HeifCleaner(),
-            FormatDetector::FORMAT_VIDEO => new VideoCleaner(),
+            FormatDetector::FORMAT_VIDEO, FormatDetector::TYPE_MP4 => new VideoCleaner(),
+            FormatDetector::TYPE_M4A => new VideoCleaner(FormatDetector::FORMAT_AUDIO),
+            FormatDetector::TYPE_MATROSKA => new MatroskaCleaner(),
+            FormatDetector::TYPE_MP3 => new Mp3Cleaner(),
+            FormatDetector::TYPE_FLAC => new FlacCleaner(),
+            FormatDetector::TYPE_OGG => new OggCleaner(),
             FormatDetector::FORMAT_TIFF => new TiffCleaner(),
-            default => throw new CleanerException(sprintf('No cleaner for format "%s".', $format)),
+            FormatDetector::TYPE_DNG => new TiffCleaner(dng: true),
+            FormatDetector::FORMAT_PDF => new PdfCleaner(),
+            FormatDetector::FORMAT_OFFICE => new OfficeCleaner(),
+            FormatDetector::FORMAT_SVG => new SvgCleaner(),
+            default => throw new CleanerException(sprintf('No cleaner for format "%s".', $type)),
         };
     }
 }

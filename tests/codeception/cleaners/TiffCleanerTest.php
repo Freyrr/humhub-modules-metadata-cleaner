@@ -113,6 +113,77 @@ class TiffCleanerTest extends CleanerTestCase
         $this->assertStringStartsWith('45 27', $fields['EXIF:GPS:GPSLatitude']);
     }
 
+    public function testDngKeepsTheRawTagsAndStillDevelops(): void
+    {
+        $this->requireExiftool();
+        $path = $this->copyFixture('meta.dng');
+        $before = $this->developed($path);
+
+        $result = (new MetadataCleanerService(new CleanOptions(collectPayloads: true)))->cleanPath($path);
+
+        $this->assertSame(FormatDetector::FORMAT_RAW, $result->format);
+        $this->assertTrue($result->changed);
+        $tags = $this->exiftoolTags($path);
+        foreach (['IFD0:DNGVersion', 'IFD0:UniqueCameraModel', 'IFD0:ColorMatrix1', 'IFD0:CFAPattern2', 'IFD0:AsShotNeutral', 'IFD0:WhiteLevel'] as $kept) {
+            $this->assertArrayHasKey($kept, $tags);
+        }
+        foreach (['IFD0:Make', 'IFD0:Artist', 'IFD0:OriginalRawFileName', 'GPS:GPSLatitude', 'ExifIFD:SerialNumber', 'XMP-dc:Creator'] as $removed) {
+            $this->assertArrayNotHasKey($removed, $tags);
+        }
+        $fields = (new FieldExtractor())->extract($result->removed);
+        $this->assertSame('IMG_secret.CR2', $fields['EXIF:IFD0:OriginalRawFileName'] ?? null);
+        if ($before !== '') {
+            $this->assertSame($before, $this->developed($path));
+        }
+    }
+
+    public function testBrokenDngIsRejectedAndLeftUntouched(): void
+    {
+        $path = $this->copyFixture('broken.dng');
+        $before = file_get_contents($path);
+        try {
+            (new MetadataCleanerService())->cleanPath($path);
+            $this->fail('No exception for a broken file.');
+        } catch (CleanerException) {
+        }
+        $this->assertSame($before, file_get_contents($path));
+    }
+
+    public function testDngAndCameraRawDetection(): void
+    {
+        $this->assertSame(FormatDetector::TYPE_DNG, FormatDetector::detectType($this->fixture('meta.dng')));
+        $this->assertSame(FormatDetector::FORMAT_TIFF, FormatDetector::detectType($this->fixture('meta-plain.tif')));
+
+        // A Canon CR2 header, and a TIFF-like raw with SubIFDs and Make (NEF, ARW...): not handled.
+        $cr2 = $this->copyFixture('plain.tif');
+        file_put_contents($cr2, "II*\x00\x10\x00\x00\x00CR\x02\x00" . str_repeat("\x00", 100));
+        $this->assertNull(FormatDetector::detectType($cr2));
+        $nef = $this->copyFixture('plain.tif');
+        file_put_contents($nef, "II*\x00\x08\x00\x00\x00\x02\x00" . pack('vvVV', 0x010F, 2, 4, 0x4E494B4E) . pack('vvVV', 0x014A, 4, 1, 100) . "\x00\x00\x00\x00");
+        $this->assertNull(FormatDetector::detectType($nef));
+    }
+
+    public function testDisabledRawIsNotTouched(): void
+    {
+        $path = $this->copyFixture('meta.dng');
+        $before = file_get_contents($path);
+
+        $result = (new MetadataCleanerService(new CleanOptions(), [FormatDetector::FORMAT_TIFF]))->cleanPath($path);
+
+        $this->assertNull($result->format);
+        $this->assertSame($before, file_get_contents($path));
+    }
+
+    /**
+     * The raw image developed by ImageMagick, or '' when it cannot read DNG.
+     */
+    private function developed(string $path): string
+    {
+        exec('convert ' . escapeshellarg('dng:' . $path) . ' -format "%#" info: 2>/dev/null', $out, $code);
+
+        return $code === 0 ? implode('', $out) : '';
+    }
+
     /**
      * Every page decoded to raw RGB by ImageMagick.
      */
