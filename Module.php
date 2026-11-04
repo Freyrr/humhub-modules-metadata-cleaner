@@ -8,6 +8,7 @@ namespace humhub\modules\metadataCleaner;
 
 use humhub\modules\metadataCleaner\cleaners\CleanOptions;
 use humhub\modules\metadataCleaner\services\MetadataCleanerService;
+use Yii;
 use yii\helpers\Url;
 
 /**
@@ -80,6 +81,14 @@ class Module extends \humhub\components\Module
             ),
             $this->getTiffPolicy() === self::TIFF_IMAGEMAGICK,
         );
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getDescription()
+    {
+        return Yii::t('MetadataCleanerModule.base', 'Removes EXIF, XMP and IPTC metadata (GPS included) from uploaded images and videos.');
     }
 
     /**
