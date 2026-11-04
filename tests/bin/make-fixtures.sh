@@ -57,3 +57,40 @@ cp meta-plain.jpg trailer.jpg
 printf 'SEFHMotionPhoto_Data secret trailer' >> trailer.jpg
 
 ls -l
+
+# Videos (needs ffmpeg). Metadata in moov/udta, moov/meta (Apple keys) and XMP.
+ffmpeg -loglevel error -y -f lavfi -i testsrc=size=160x120:rate=10 -f lavfi -i sine=frequency=440 -t 1 \
+    -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest plain.mp4
+ffmpeg -loglevel error -y -i plain.mp4 -c copy -metadata location="+45.4642+009.1900/" -metadata make=TestPhone \
+    -metadata model=X1 -metadata title=Secret -movflags use_metadata_tags meta.mp4
+ffmpeg -loglevel error -y -i plain.mp4 -c copy -f mov -metadata location="+45.4642+009.1900/" \
+    -metadata "com.apple.quicktime.make=Apple" -metadata "com.apple.quicktime.model=iPhone" -movflags use_metadata_tags meta.mov
+exiftool -q -overwrite_original -XMP:CreatorTool=Tester -UserData:Make=TestPhone meta.mp4
+ffmpeg -loglevel error -y -i meta.mp4 -c copy -map_metadata 0 -movflags +faststart+use_metadata_tags meta-faststart.mp4
+exiftool -q -overwrite_original -XMP:CreatorTool=Tester meta-faststart.mp4
+head -c 5000 meta.mp4 > broken.mp4
+
+# HEIC (needs Python with pillow-heif: pip install pillow-heif).
+python3 - <<'PY'
+import pillow_heif, PIL.Image as Image
+pillow_heif.register_heif_opener()
+im = Image.new('RGB', (160, 100))
+px = im.load()
+for x in range(160):
+    for y in range(100):
+        px[x, y] = ((x * 3) % 256, (y * 5) % 256, (x * y) % 256)
+im.save('plain.heic', quality=90)
+PY
+cp plain.heic meta.heic
+exiftool -q -overwrite_original -GPSLatitude=45.4642 -GPSLatitudeRef=N -GPSLongitude=9.19 -GPSLongitudeRef=E \
+    -Make=TestPhone -Model=X1 -SerialNumber=SN1 -XMP:CreatorTool=Tester meta.heic
+head -c 300 meta.heic > broken.heic
+
+# TIFF (needs ImageMagick): single page and multi-page.
+convert plain.png -compress none plain.tif
+convert plain.png plain.png -compress lzw multipage.tif
+for f in plain.tif multipage.tif; do
+    cp "$f" "meta-$f"
+    exiftool -q -overwrite_original "${TAGS[@]}" -Artist="Mario Rossi" -IPTC:By-line="Mario Rossi" -Orientation#=6 "meta-$f"
+done
+head -c 400 meta-plain.tif > broken.tif

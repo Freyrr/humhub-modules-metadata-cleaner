@@ -7,7 +7,9 @@
 namespace humhub\modules\metadataCleaner;
 
 use humhub\modules\metadataCleaner\cleaners\CleanOptions;
+use humhub\modules\metadataCleaner\cleaners\FormatDetector;
 use humhub\modules\metadataCleaner\services\MetadataCleanerService;
+use Yii;
 use yii\helpers\Url;
 
 /**
@@ -17,17 +19,14 @@ use yii\helpers\Url;
  * - logMode: one of the LOG_* constants
  * - logRetentionDays: days a log row is kept
  * - keepOrientation: keep the EXIF Orientation tag
- * - tiffPolicy: one of the TIFF_* constants
  * - onError: one of the ON_ERROR_* constants
+ * - formats: comma-separated FormatDetector::FORMAT_* values to clean (default: all)
  */
 class Module extends \humhub\components\Module
 {
     public const LOG_OFF = 'off';
     public const LOG_FIELDS = 'fields';
     public const LOG_FIELDS_AND_VALUES = 'values';
-
-    public const TIFF_REJECT = 'reject';
-    public const TIFF_IMAGEMAGICK = 'imagemagick';
 
     /** On any error the file is passed to HumHub unchanged. */
     public const ON_ERROR_PASS = 'pass';
@@ -59,16 +58,25 @@ class Module extends \humhub\components\Module
         return (bool)$this->settings->get('keepOrientation', true);
     }
 
-    public function getTiffPolicy(): string
-    {
-        return $this->settings->get('tiffPolicy', self::TIFF_REJECT) === self::TIFF_IMAGEMAGICK
-            ? self::TIFF_IMAGEMAGICK : self::TIFF_REJECT;
-    }
-
     public function getOnError(): string
     {
         return $this->settings->get('onError', self::ON_ERROR_PASS) === self::ON_ERROR_REJECT
             ? self::ON_ERROR_REJECT : self::ON_ERROR_PASS;
+    }
+
+    /**
+     * Formats the admin chose to clean. Files of other formats are left as they are.
+     *
+     * @return string[]
+     */
+    public function getEnabledFormats(): array
+    {
+        $value = $this->settings->get('formats');
+        if ($value === null) {
+            return FormatDetector::ALL_FORMATS;
+        }
+
+        return array_values(array_intersect(FormatDetector::ALL_FORMATS, explode(',', (string)$value)));
     }
 
     public function getCleanerService(): MetadataCleanerService
@@ -78,8 +86,16 @@ class Module extends \humhub\components\Module
                 keepOrientation: $this->getKeepOrientation(),
                 collectPayloads: $this->getLogMode() !== self::LOG_OFF,
             ),
-            $this->getTiffPolicy() === self::TIFF_IMAGEMAGICK,
+            $this->getEnabledFormats(),
         );
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getDescription()
+    {
+        return Yii::t('MetadataCleanerModule.base', 'Removes EXIF, XMP and IPTC metadata (GPS included) from uploaded images and videos.');
     }
 
     /**

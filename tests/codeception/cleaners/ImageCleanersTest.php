@@ -25,6 +25,7 @@ class ImageCleanersTest extends CleanerTestCase
             'png' => ['meta.png', FormatDetector::FORMAT_PNG],
             'webp' => ['meta.webp', FormatDetector::FORMAT_WEBP],
             'gif' => ['meta.gif', FormatDetector::FORMAT_GIF],
+            'heic' => ['meta.heic', FormatDetector::FORMAT_HEIF],
         ];
     }
 
@@ -35,6 +36,7 @@ class ImageCleanersTest extends CleanerTestCase
             'png' => ['broken.png'],
             'webp' => ['broken.webp'],
             'gif' => ['broken.gif'],
+            'heic' => ['broken.heic'],
         ];
     }
 
@@ -59,6 +61,16 @@ class ImageCleanersTest extends CleanerTestCase
      */
     public function testDoesNotReencode(string $name): void
     {
+        if (str_ends_with($name, '.heic')) {
+            // GD cannot decode HEIC: the bytes of the image item are compared instead.
+            $path = $this->copyFixture($name);
+            $before = file_get_contents($path);
+            (new MetadataCleanerService())->cleanPath($path);
+            $after = file_get_contents($path);
+            $this->assertSame(strlen($before), strlen($after));
+            $this->assertSame(substr($before, -10000), substr($after, -10000));
+            return;
+        }
         $path = $this->copyFixture($name);
         $before = $this->pixels($path);
 
@@ -147,6 +159,17 @@ class ImageCleanersTest extends CleanerTestCase
         $this->assertContains('trailer', array_map(static fn(MetadataBlock $b) => $b->location, $result->removed));
     }
 
+    public function testDisabledFormatIsNotTouched(): void
+    {
+        $path = $this->copyFixture('meta-plain.jpg');
+        $before = file_get_contents($path);
+
+        $result = (new MetadataCleanerService(new CleanOptions(), [FormatDetector::FORMAT_PNG]))->cleanPath($path);
+
+        $this->assertNull($result->format);
+        $this->assertSame($before, file_get_contents($path));
+    }
+
     public function testUnknownFormatIsNotTouched(): void
     {
         $path = tempnam(sys_get_temp_dir(), 'mdct');
@@ -157,19 +180,6 @@ class ImageCleanersTest extends CleanerTestCase
         $this->assertNull($result->format);
         $this->assertFalse($result->changed);
         unlink($path);
-    }
-
-    public function testTiffIsRejectedByDefault(): void
-    {
-        $path = tempnam(sys_get_temp_dir(), 'mdct');
-        file_put_contents($path, "II*\x00" . str_repeat("\x00", 20));
-
-        $this->expectException(CleanerException::class);
-        try {
-            (new MetadataCleanerService())->cleanPath($path);
-        } finally {
-            unlink($path);
-        }
     }
 
     public function testFormatDetection(): void

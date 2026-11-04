@@ -20,6 +20,11 @@ final class FormatDetector
     public const FORMAT_VIDEO = 'video';
     public const FORMAT_TIFF = 'tiff';
 
+    public const ALL_FORMATS = [
+        self::FORMAT_JPEG, self::FORMAT_PNG, self::FORMAT_WEBP, self::FORMAT_GIF,
+        self::FORMAT_HEIF, self::FORMAT_VIDEO, self::FORMAT_TIFF,
+    ];
+
     /** ftyp brands of HEIF/HEIC/AVIF still images. */
     private const HEIF_BRANDS = ['heic', 'heix', 'heim', 'heis', 'hevc', 'hevx', 'hevm', 'hevs', 'mif1', 'mif2', 'msf1', 'avif', 'avis'];
 

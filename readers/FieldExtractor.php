@@ -14,7 +14,7 @@ use humhub\modules\metadataCleaner\cleaners\MetadataBlock;
 class FieldExtractor
 {
     public const MAX_VALUE_LENGTH = 200;
-    public const MAX_FIELDS = 500;
+    public const MAX_FIELDS = 200;
 
     /**
      * @param MetadataBlock[] $blocks
@@ -24,7 +24,7 @@ class FieldExtractor
     {
         $fields = [];
         foreach ($blocks as $block) {
-            $found = match ($block->type) {
+            $found = $block->fields !== [] ? $block->fields : match ($block->type) {
                 MetadataBlock::TYPE_EXIF => $block->payload !== null ? (new ExifReader())->read($this->stripExifId($block->payload)) : [],
                 MetadataBlock::TYPE_XMP => $block->payload !== null ? (new XmpReader())->read($block->payload) : [],
                 MetadataBlock::TYPE_IPTC => $block->payload !== null ? (new IptcReader())->read($block->payload) : [],
