@@ -30,7 +30,6 @@ class MetadataCleanerService
      */
     public function __construct(
         private readonly CleanOptions $options = new CleanOptions(),
-        private readonly bool $allowTiff = false,
         private readonly array $formats = FormatDetector::ALL_FORMATS,
     ) {
     }
@@ -54,7 +53,7 @@ class MetadataCleanerService
     }
 
     /**
-     * @throws CleanerException when the format is recognised but not allowed
+     * Cleaner for a format detected by FormatDetector.
      */
     public function getCleaner(string $format): CleanerInterface
     {
@@ -65,9 +64,7 @@ class MetadataCleanerService
             FormatDetector::FORMAT_GIF => new GifCleaner(),
             FormatDetector::FORMAT_HEIF => new HeifCleaner(),
             FormatDetector::FORMAT_VIDEO => new VideoCleaner(),
-            FormatDetector::FORMAT_TIFF => $this->allowTiff && TiffCleaner::isAvailable()
-                ? new TiffCleaner()
-                : throw new CleanerException('TIFF files are not accepted.'),
+            FormatDetector::FORMAT_TIFF => new TiffCleaner(),
         };
     }
 }

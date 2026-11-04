@@ -85,3 +85,12 @@ cp plain.heic meta.heic
 exiftool -q -overwrite_original -GPSLatitude=45.4642 -GPSLatitudeRef=N -GPSLongitude=9.19 -GPSLongitudeRef=E \
     -Make=TestPhone -Model=X1 -SerialNumber=SN1 -XMP:CreatorTool=Tester meta.heic
 head -c 300 meta.heic > broken.heic
+
+# TIFF (needs ImageMagick): single page and multi-page.
+convert plain.png -compress none plain.tif
+convert plain.png plain.png -compress lzw multipage.tif
+for f in plain.tif multipage.tif; do
+    cp "$f" "meta-$f"
+    exiftool -q -overwrite_original "${TAGS[@]}" -Artist="Mario Rossi" -IPTC:By-line="Mario Rossi" -Orientation#=6 "meta-$f"
+done
+head -c 400 meta-plain.tif > broken.tif

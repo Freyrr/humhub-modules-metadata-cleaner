@@ -164,7 +164,7 @@ class ImageCleanersTest extends CleanerTestCase
         $path = $this->copyFixture('meta-plain.jpg');
         $before = file_get_contents($path);
 
-        $result = (new MetadataCleanerService(new CleanOptions(), false, [FormatDetector::FORMAT_PNG]))->cleanPath($path);
+        $result = (new MetadataCleanerService(new CleanOptions(), [FormatDetector::FORMAT_PNG]))->cleanPath($path);
 
         $this->assertNull($result->format);
         $this->assertSame($before, file_get_contents($path));
@@ -180,19 +180,6 @@ class ImageCleanersTest extends CleanerTestCase
         $this->assertNull($result->format);
         $this->assertFalse($result->changed);
         unlink($path);
-    }
-
-    public function testTiffIsRejectedByDefault(): void
-    {
-        $path = tempnam(sys_get_temp_dir(), 'mdct');
-        file_put_contents($path, "II*\x00" . str_repeat("\x00", 20));
-
-        $this->expectException(CleanerException::class);
-        try {
-            (new MetadataCleanerService())->cleanPath($path);
-        } finally {
-            unlink($path);
-        }
     }
 
     public function testFormatDetection(): void

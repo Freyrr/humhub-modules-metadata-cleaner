@@ -22,6 +22,10 @@ class ExifReader
             0x011A => 'XResolution', 0x011B => 'YResolution', 0x0128 => 'ResolutionUnit', 0x0131 => 'Software',
             0x0132 => 'ModifyDate', 0x013B => 'Artist', 0x013C => 'HostComputer', 0x0213 => 'YCbCrPositioning',
             0x8298 => 'Copyright', 0x0201 => 'ThumbnailOffset', 0x0202 => 'ThumbnailLength', 0x0103 => 'Compression',
+            0x02BC => 'XMLPacket', 0x83BB => 'IPTC-NAA', 0x8649 => 'PhotoshopSettings', 0x8773 => 'ICC_Profile',
+            0x0100 => 'ImageWidth', 0x0101 => 'ImageHeight', 0x0102 => 'BitsPerSample', 0x0106 => 'PhotometricInterpretation',
+            0x0111 => 'StripOffsets', 0x0115 => 'SamplesPerPixel', 0x0116 => 'RowsPerStrip', 0x0117 => 'StripByteCounts',
+            0x011C => 'PlanarConfiguration', 0x0153 => 'SampleFormat', 0x010D => 'DocumentName', 0x011D => 'PageName',
             0x9C9B => 'XPTitle', 0x9C9C => 'XPComment', 0x9C9D => 'XPAuthor', 0x9C9E => 'XPKeywords', 0x9C9F => 'XPSubject',
         ],
         'ExifIFD' => [
@@ -47,7 +51,12 @@ class ExifReader
     ];
 
     /** Tags whose value is binary or huge and is never logged. */
-    private const NO_VALUE = [0x927C, 0x0201, 0x0202];
+    private const NO_VALUE = [0x927C, 0x0201, 0x0202, 0x02BC, 0x83BB, 0x8649, 0x8773, 0x0111, 0x0117, 0x0144, 0x0145];
+
+    public static function tagName(string $dictionary, int $tag): string
+    {
+        return self::TAGS[$dictionary][$tag] ?? sprintf('Tag0x%04X', $tag);
+    }
 
     private string $data = '';
     private string $u16 = 'n';
