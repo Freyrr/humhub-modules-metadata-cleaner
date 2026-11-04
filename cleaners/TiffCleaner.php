@@ -114,8 +114,28 @@ final class TiffCleaner implements CleanerInterface
         FileIo::replace($path, $out);
 
         return new CleanResult(FormatDetector::FORMAT_TIFF, true, [
-            new MetadataBlock(MetadataBlock::TYPE_EXIF, 'TIFF', 0, null, $options->collectPayloads ? $this->fields : []),
+            new MetadataBlock(MetadataBlock::TYPE_EXIF, 'TIFF', 0, null, $options->collectPayloads ? $this->fieldValues() : []),
         ]);
+    }
+
+    /**
+     * Values of the removed tags, read from the original file, for the log.
+     *
+     * @return array<string, string>
+     */
+    private function fieldValues(): array
+    {
+        try {
+            $values = (new ExifReader())->read($this->data);
+        } catch (\Throwable) {
+            $values = [];
+        }
+        $fields = [];
+        foreach ($this->fields as $name => $empty) {
+            $fields[$name] = $values[$name] ?? '';
+        }
+
+        return $fields;
     }
 
     /**

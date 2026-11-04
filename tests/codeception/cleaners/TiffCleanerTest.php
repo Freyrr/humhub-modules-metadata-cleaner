@@ -112,6 +112,8 @@ class TiffCleanerTest extends CleanerTestCase
         $this->assertArrayHasKey('EXIF:IFD0:Make', $fields);
         $this->assertArrayHasKey('EXIF:GPS:GPSLatitude', $fields);
         $this->assertArrayHasKey('EXIF:IFD0:XMLPacket', $fields);
+        $this->assertSame('TestPhone', $fields['EXIF:IFD0:Make']);
+        $this->assertStringStartsWith('45 27', $fields['EXIF:GPS:GPSLatitude']);
     }
 
     /**
