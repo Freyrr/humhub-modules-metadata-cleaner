@@ -202,7 +202,19 @@ class Events
         $head = @stream_get_contents($in, 64);
         if (is_string($head)) {
             $format = FormatDetector::detectFromBytes($head);
-            if ($format === null || !in_array($format, $module->getEnabledFormats(), true)) {
+            $enabled = $module->getEnabledFormats();
+            if ($format === FormatDetector::FORMAT_TIFF) {
+                // A TIFF header can also begin a DNG (the raw group) or an
+                // unhandled camera RAW: the full detection reads the tags.
+                $enabled = in_array(FormatDetector::FORMAT_TIFF, $enabled, true)
+                    || in_array(FormatDetector::FORMAT_RAW, $enabled, true);
+            } else {
+                $enabled = $format !== null && in_array($format, $enabled, true);
+            }
+            // An XML file needs more bytes to tell an SVG apart; the others
+            // are decided for good on these 64 bytes.
+            $maybeSvg = $format === null && FormatDetector::looksLikeXml($head);
+            if (!$enabled && !$maybeSvg) {
                 fclose($in);
 
                 return null;

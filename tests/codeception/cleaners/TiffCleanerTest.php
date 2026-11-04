@@ -179,7 +179,7 @@ class TiffCleanerTest extends CleanerTestCase
      */
     private function developed(string $path): string
     {
-        exec('convert ' . escapeshellarg('dng:' . $path) . ' -format "%#" info: 2>/dev/null', $out, $code);
+        exec(self::magick() . ' ' . escapeshellarg('dng:' . $path) . ' -format "%#" info: 2>' . self::nullDevice(), $out, $code);
 
         return $code === 0 ? implode('', $out) : '';
     }

@@ -241,10 +241,7 @@ class MediaCleanersTest extends CleanerTestCase
 
     private function requireFfmpeg(): void
     {
-        exec('ffprobe -version 2>/dev/null', $out, $code);
-        if ($code !== 0) {
-            $this->markTestSkipped('ffmpeg is not installed.');
-        }
+        $this->requireTool('ffprobe -version', 'ffmpeg');
     }
 
     /**
@@ -277,10 +274,10 @@ class MediaCleanersTest extends CleanerTestCase
      */
     private function packets(string $path): string
     {
-        exec('ffmpeg -v error -i ' . escapeshellarg($path) . ' -map 0:a? -map 0:V? -c copy -f streamhash -hash md5 - 2>/dev/null', $out);
+        exec('ffmpeg -v error -i ' . escapeshellarg($path) . ' -map 0:a? -map 0:V? -c copy -f streamhash -hash md5 - 2>' . self::nullDevice(), $out);
         // Codec setup data of the same streams (for example the Opus and Vorbis
         // headers); cover pictures are metadata and are left out.
-        exec('ffprobe -v error -show_data_hash md5 -show_entries stream=codec_type,codec_name,extradata_hash:stream_disposition=attached_pic -of csv=p=0 ' . escapeshellarg($path) . ' 2>/dev/null', $streams);
+        exec('ffprobe -v error -show_data_hash md5 -show_entries stream=codec_type,codec_name,extradata_hash:stream_disposition=attached_pic -of csv=p=0 ' . escapeshellarg($path) . ' 2>' . self::nullDevice(), $streams);
         foreach ($streams as $stream) {
             if (preg_match('/,(audio|video),.*,0$/', $stream)) {
                 $out[] = $stream;

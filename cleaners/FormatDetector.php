@@ -140,7 +140,7 @@ final class FormatDetector
         return self::FORMAT_TIFF;
     }
 
-    private static function looksLikeXml(string $head): bool
+    public static function looksLikeXml(string $head): bool
     {
         return str_starts_with(ltrim(str_starts_with($head, "\xEF\xBB\xBF") ? substr($head, 3) : $head), '<');
     }

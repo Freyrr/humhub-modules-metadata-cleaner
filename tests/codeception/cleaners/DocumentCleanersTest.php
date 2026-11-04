@@ -97,8 +97,9 @@ class DocumentCleanersTest extends CleanerTestCase
 
     public function testPdfPagesAreUnchanged(): void
     {
+        // Xpdf-derived tools exit with 99 when asked for their version.
         exec('pdftotext -v 2>&1', $out, $code);
-        if ($code !== 0) {
+        if ($code !== 0 && $code !== 99) {
             $this->markTestSkipped('pdftotext is not installed.');
         }
         foreach (['meta.pdf', 'meta-objstm.pdf'] as $name) {
@@ -276,11 +277,11 @@ class DocumentCleanersTest extends CleanerTestCase
      */
     private function pdfText(string $path): string
     {
-        exec('pdfinfo ' . escapeshellarg($path) . ' 2>/dev/null', $info, $code);
+        exec('pdfinfo ' . escapeshellarg($path) . ' 2>' . self::nullDevice(), $info, $code);
         if ($code !== 0) {
             return file_get_contents($path);
         }
-        exec('pdfinfo -meta ' . escapeshellarg($path) . ' 2>/dev/null', $meta);
+        exec('pdfinfo -meta ' . escapeshellarg($path) . ' 2>' . self::nullDevice(), $meta);
 
         return implode("\n", $info) . "\n" . implode("\n", $meta) . "\n" . file_get_contents($path);
     }
