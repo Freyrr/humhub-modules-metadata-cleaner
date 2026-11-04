@@ -1,0 +1,37 @@
+# Development environment: a real HumHub instance with this module mounted,
+# to test the HumHub-bound code (Events, LogService, claimUpload, admin page).
+#
+# Usage:
+#   docker compose -f tests/docker-compose.yml up -d
+#   # open http://localhost:8080, finish the HumHub installer (db host: db)
+#   # then enable the module: Administration -> Modules -> Metadata Cleaner
+#
+# The module directory is mounted read-only at the standard module path.
+services:
+  db:
+    image: mariadb:11
+    environment:
+      MYSQL_ROOT_PASSWORD: humhub
+      MYSQL_DATABASE: humhub
+      MYSQL_USER: humhub
+      MYSQL_PASSWORD: humhub
+    volumes:
+      - db-data:/var/lib/mysql
+
+  humhub:
+    image: mriedmann/humhub-fcgi:1.19.0
+    environment:
+      HUMHUB_DB_HOST: db
+      HUMHUB_DB_NAME: humhub
+      HUMHUB_DB_USER: humhub
+      HUMHUB_DB_PASSWORD: humhub
+      HUMHUB_AUTO_INSTALL: "false"
+    depends_on: [db]
+    volumes:
+      - humhub-data:/var/www/localhost/htdocs
+      - ../:/var/www/localhost/htdocs/protected/modules/metadata-cleaner:ro
+    ports: ["8080:80"]
+
+volumes:
+  db-data:
+  humhub-data:

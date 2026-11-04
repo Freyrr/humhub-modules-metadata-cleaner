@@ -98,7 +98,6 @@ class ConfigureForm extends Model
             FormatDetector::FORMAT_PDF => 'PDF (.pdf)',
             FormatDetector::FORMAT_OFFICE => 'Office / OpenDocument (.docx, .xlsx, .pptx, .odt, .ods, .odp)',
             FormatDetector::FORMAT_SVG => 'SVG (.svg)',
-            FormatDetector::FORMAT_PSD => 'Photoshop (.psd, .psb)',
         ];
     }
 

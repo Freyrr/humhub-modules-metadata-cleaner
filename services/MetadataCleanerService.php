@@ -25,7 +25,6 @@ use humhub\modules\metadataCleaner\cleaners\OfficeCleaner;
 use humhub\modules\metadataCleaner\cleaners\OggCleaner;
 use humhub\modules\metadataCleaner\cleaners\PdfCleaner;
 use humhub\modules\metadataCleaner\cleaners\PngCleaner;
-use humhub\modules\metadataCleaner\cleaners\PsdCleaner;
 use humhub\modules\metadataCleaner\cleaners\RiffCleaner;
 use humhub\modules\metadataCleaner\cleaners\SvgCleaner;
 use humhub\modules\metadataCleaner\cleaners\TiffCleaner;
@@ -90,7 +89,9 @@ class MetadataCleanerService
             FormatDetector::TYPE_WAV, FormatDetector::TYPE_AVI => new RiffCleaner(),
             FormatDetector::TYPE_ASF => new AsfCleaner(),
             FormatDetector::TYPE_AIFF => new AiffCleaner(),
-            FormatDetector::TYPE_PSD => new PsdCleaner(),
+            // PSD/PSB is detected but intentionally not cleaned for now:
+            // FormatDetector::FORMAT_PSD is not in ALL_FORMATS, so cleanPath()
+            // returns notHandled before a cleaner is picked.
             FormatDetector::TYPE_JP2 => new Jp2Cleaner(),
             FormatDetector::TYPE_JXL => new JxlCleaner(),
             FormatDetector::FORMAT_PDF => new PdfCleaner(),

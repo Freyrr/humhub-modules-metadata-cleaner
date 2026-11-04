@@ -30,7 +30,7 @@ final class FormatDetector
     public const ALL_FORMATS = [
         self::FORMAT_JPEG, self::FORMAT_PNG, self::FORMAT_WEBP, self::FORMAT_GIF,
         self::FORMAT_HEIF, self::FORMAT_VIDEO, self::FORMAT_AUDIO, self::FORMAT_TIFF, self::FORMAT_RAW,
-        self::FORMAT_PDF, self::FORMAT_OFFICE, self::FORMAT_SVG, self::FORMAT_PSD,
+        self::FORMAT_PDF, self::FORMAT_OFFICE, self::FORMAT_SVG,
     ];
 
     /** Bytes read at the start of a text file to find the <svg> root. */

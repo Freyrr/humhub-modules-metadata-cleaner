@@ -42,7 +42,7 @@ Note that the optional log of the module can itself store personal data (for exa
 
 ## Features
 
-- Cleans **JPEG, PNG/APNG, WebP, GIF, HEIC/HEIF/AVIF, TIFF, DNG raw and SVG** images, **MP4/MOV/3GP, WebM/MKV, AVI and WMV** videos, **M4A, MP3, AAC, FLAC, Ogg, Opus, WAV and AIFF** audio files, **JPEG 2000 and JPEG XL** images, **Photoshop (PSD/PSB)** files, and **PDF, Office (DOCX, XLSX, PPTX) and OpenDocument (ODT, ODS, ODP)** documents, including the short videos of motion photos. SVG images are also cleaned of scripts. Each file type can be switched on or off; all are on by default.
+- Cleans **JPEG, PNG/APNG, WebP, GIF, HEIC/HEIF/AVIF, TIFF, DNG raw and SVG** images, **MP4/MOV/3GP, WebM/MKV, AVI and WMV** videos, **M4A, MP3, AAC, FLAC, Ogg, Opus, WAV and AIFF** audio files, **JPEG 2000 and JPEG XL** images, and **PDF, Office (DOCX, XLSX, PPTX) and OpenDocument (ODT, ODS, ODP)** documents, including the short videos of motion photos. SVG images are also cleaned of scripts. Each file type can be switched on or off; all are on by default.
 - The file type is detected from the file content, never from its name, so a renamed file is still cleaned.
 - Keeps what is needed to show the file correctly: colour profiles and, optionally, the EXIF Orientation tag (without it some phone photos are shown rotated).
 - Works on every upload path: the web uploader, the REST API, imports and other modules.
@@ -60,7 +60,7 @@ The module removes the metadata stored in the file formats listed above. It does
 - **Content of documents.** In Office and OpenDocument files only the document properties are removed: comments and their authors, tracked changes, hidden text, speaker notes, and the metadata of pictures embedded in the document stay as they are. In PDF files the metadata of embedded images and attached files is not changed.
 - **Other file types.** Camera RAW formats that are not based on TIFF (CR3, RAF, X3F...), legacy Office files (DOC, XLS, PPT), RTF, EPUB, flat OpenDocument XML files, compressed SVG (SVGZ), JPEG XL files without a container (bare codestream: they hold no metadata), archives (ZIP, RAR, 7z) and their contents are stored unchanged.
 - **Files that cannot be cleaned safely.** Encrypted PDF files, PDF streams with unusual compression, ZIP64 or encrypted Office files, SVG files with entity declarations and damaged files are passed on unchanged (or rejected, depending on the settings), and the error is logged.
-- **Technical data that is kept on purpose,** because the file needs it: the EXIF orientation tag (optional), colour profiles, the camera model name that DNG files require (`UniqueCameraModel`), the Photoshop resources that describe how the image looks (resolution, colour profile, layer groups, paths), the encoder name inside Ogg and AAC audio streams, and the empty application fields that Matroska requires.
+- **Technical data that is kept on purpose,** because the file needs it: the EXIF orientation tag (optional), colour profiles, the camera model name that DNG files require (`UniqueCameraModel`), the encoder name inside Ogg and AAC audio streams, and the empty application fields that Matroska requires.
 - **Files uploaded before the module was enabled**, and images that HumHub stores outside the file library (such as profile and space images), are not processed.
 
 ## Requirements

@@ -28,7 +28,6 @@
 | Ogg (Vorbis, Opus, Theora, Speex, FLAC) | all comments of the comment header (the encoder vendor string is kept) | all packets; page checksums are recomputed |
 | TIFF | all tags not needed to decode the image (EXIF, GPS, XMP, IPTC, device and author tags) | image data and the tags that describe it |
 | RAW (DNG, CR2, NEF, ARW, ORF, RW2) | as TIFF, plus maker notes (DNGPrivateData), original raw file name and data, preview application, settings and date | raw image data and the DNG tags needed to develop it (CFA layout, colour matrices, calibration, UniqueCameraModel, opcodes) |
-| Photoshop (PSD, PSB) | image resources with IPTC, EXIF, XMP, thumbnails, copyright, URLs, slices, version info, print settings, auto-save path, plug-in and Lightroom data | layers, masks, pixel data, and the resources that describe the image (resolution, ICC profile, alpha channels, layer groups, paths, halftone and transfer settings) |
 | JPEG 2000 (JP2, JPX) | uuid (EXIF, XMP, vendor), xml, asoc and lbl boxes, replaced by free boxes of the same size | header and codestream |
 | JPEG XL (container) | Exif, xml (XMP) and jumb (JUMBF, C2PA) boxes, also brotli-compressed, replaced by free boxes of the same size | codestream |
 | WAV, RF64, AVI | LIST INFO (title, artist, comment, software), bext, iXML, axml, XMP, exif and ID3 chunks | format, sound and video data, AVI index |
@@ -40,6 +39,10 @@
 | SVG | metadata, comments, editor data (Inkscape, Sodipodi, Illustrator, Sketch...), scripts, event attributes, javascript: links, foreignObject, embedded frames | the drawing |
 
 Files of any other type are not changed. See the README for what the module does not cover.
+
+> **Note — WMV/ASF:** the cleaner expects the standard ASF header layout. Files with unusual structures (DRM-protected streams, non-standard index objects) may fail cleaning: they are then passed on unchanged, or rejected, depending on the *When a file cannot be cleaned* setting, and the error is logged.
+>
+> **Note — Photoshop (PSD/PSB):** detected but not cleaned yet: removing image resources is not yet safe enough for production files, so they are stored unchanged.
 
 ## Console command
 
