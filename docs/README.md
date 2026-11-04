@@ -52,5 +52,8 @@ Note that the optional log of the module can itself store personal data (for exa
 ## Requirements
 
 - HumHub 1.19 or later.
+- PHP 8.2 or later (the minimum of HumHub 1.19).
+- PHP extensions: `dom`, `libxml`, `mbstring` and `json`. HumHub already requires all of them.
+- No Composer packages and no external programs (exiftool, ImageMagick, ffmpeg...) at runtime. Those tools are used only by the test suite.
 
 See [MANUAL.md](MANUAL.md) for the settings and the console commands.
