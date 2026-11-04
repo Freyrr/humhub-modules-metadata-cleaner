@@ -173,7 +173,7 @@ class ImageCleanersTest extends CleanerTestCase
     public function testUnknownFormatIsNotTouched(): void
     {
         $path = tempnam(sys_get_temp_dir(), 'mdct');
-        file_put_contents($path, "%PDF-1.4\nnot an image");
+        file_put_contents($path, "BM plain text, not a supported format");
 
         $result = (new MetadataCleanerService())->cleanPath($path);
 
@@ -192,7 +192,8 @@ class ImageCleanersTest extends CleanerTestCase
         $this->assertSame(FormatDetector::FORMAT_HEIF, FormatDetector::detectFromBytes("\x00\x00\x00\x18ftypmif1\x00\x00\x00\x00mif1heic"));
         $this->assertSame(FormatDetector::FORMAT_VIDEO, FormatDetector::detectFromBytes("\x00\x00\x00\x14ftypqt  \x00\x00\x00\x00qt  "));
         $this->assertSame(FormatDetector::FORMAT_VIDEO, FormatDetector::detectFromBytes("\x00\x00\x00\x18ftyp3gp4\x00\x00\x00\x00isom3gp4"));
-        $this->assertNull(FormatDetector::detectFromBytes('PK' . "\x03\x04"));
+        $this->assertSame(FormatDetector::FORMAT_OFFICE, FormatDetector::detectFromBytes('PK' . "\x03\x04"));
+        $this->assertNull(FormatDetector::detectFromBytes('PK' . "\x05\x06"));
     }
 
     public function testFieldsAreReadForTheLog(): void

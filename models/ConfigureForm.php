@@ -95,6 +95,9 @@ class ConfigureForm extends Model
             FormatDetector::FORMAT_AUDIO => Yii::t('MetadataCleanerModule.base', 'Audio') . ' (.m4a, .mp3, .aac, .flac, .ogg, .opus)',
             FormatDetector::FORMAT_TIFF => 'TIFF (.tif, .tiff)',
             FormatDetector::FORMAT_RAW => 'RAW DNG (.dng)',
+            FormatDetector::FORMAT_PDF => 'PDF (.pdf)',
+            FormatDetector::FORMAT_OFFICE => 'Office / OpenDocument (.docx, .xlsx, .pptx, .odt, .ods, .odp)',
+            FormatDetector::FORMAT_SVG => 'SVG (.svg)',
         ];
     }
 

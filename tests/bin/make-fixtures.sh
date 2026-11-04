@@ -141,3 +141,47 @@ exiftool -q -overwrite_original -GPSLatitude=45.4642 -GPSLatitudeRef=N -GPSLongi
     -Make=TestPhone -Model=X1 -Artist="Mario Rossi" -SerialNumber=SN12345 -DateTimeOriginal="2026:11:04 08:00:00" \
     -OriginalRawFileName=IMG_secret.CR2 -XMP:Creator="Mario Rossi" meta.dng
 head -c 300 meta.dng > broken.dng
+
+# Documents (needs LibreOffice and poppler): PDF with an exiftool incremental update,
+# PDF with object streams, DOCX, XLSX, ODT, and an Inkscape-like SVG with scripts.
+cat > doc.fodt <<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<office:document xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0" xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0" xmlns:meta="urn:oasis:names:tc:opendocument:xmlns:meta:1.0" xmlns:dc="http://purl.org/dc/elements/1.1/" office:version="1.3" office:mimetype="application/vnd.oasis.opendocument.text">
+<office:meta><dc:title>Secret title</dc:title><dc:creator>Mario Rossi</dc:creator><meta:initial-creator>Mario Rossi</meta:initial-creator><dc:description>secret comment</dc:description><meta:keyword>secret</meta:keyword><meta:user-defined meta:name="Company">ACME Secret</meta:user-defined></office:meta>
+<office:body><office:text><text:p>Hello world, this is the document text.</text:p></office:text></office:body></office:document>
+XML
+soffice --headless --convert-to odt doc.fodt >/dev/null
+soffice --headless --convert-to docx doc.fodt >/dev/null
+soffice --headless --convert-to pdf doc.fodt >/dev/null
+printf 'a,b\n1,2\n' > sheet.csv
+soffice --headless --convert-to xlsx sheet.csv >/dev/null
+mv doc.odt meta.odt; mv doc.docx meta.docx; mv sheet.xlsx meta.xlsx; mv doc.pdf meta.pdf; rm -f doc.fodt sheet.csv
+exiftool -q -overwrite_original -Author="Mario Rossi" -Creator="Secret Tool" -XMP-dc:Creator="Mario Rossi" \
+    -XMP-xmp:CreatorTool="Secret Tool" -XMP-dc:Title="Secret title" meta.pdf
+python3 "$BIN/make-pdf-objstm.py"
+off=$(grep -a -b -o "/Type/Metadata\|/Type /Metadata" meta.pdf | head -1 | cut -d: -f1)
+head -c $((off + 300)) meta.pdf > broken.pdf
+head -c 600 meta.docx > broken.docx
+printf 'hello' > hello.txt && zip -q -X plain.zip hello.txt && rm hello.txt
+cat > meta.svg <<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) by Mario Rossi -->
+<svg width="100" height="80" viewBox="0 0 100 80" version="1.1" id="svg1"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)" sodipodi:docname="secret-drawing.svg"
+   inkscape:export-filename="/home/mario.rossi/Documents/secret.png" onload="alert(1)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <sodipodi:namedview id="namedview1" pagecolor="#ffffff" inkscape:zoom="2" inkscape:current-layer="layer1"/>
+  <metadata id="metadata1"><rdf:RDF><cc:Work rdf:about=""><dc:title>Secret title</dc:title><dc:creator><cc:Agent><dc:title>Mario Rossi</dc:title></cc:Agent></dc:creator><dc:date>2026-11-04</dc:date></cc:Work></rdf:RDF></metadata>
+  <script type="text/javascript">alert('x')</script>
+  <g inkscape:label="Layer secret" inkscape:groupmode="layer" id="layer1">
+    <rect x="10" y="10" width="80" height="60" fill="#3a7" onclick="steal()" style="stroke:#000"/>
+    <a xlink:href="javascript:alert(2)"><circle cx="50" cy="40" r="10" fill="red"/></a>
+    <a href="https://example.org/"><text x="20" y="75">Hello</text></a>
+    <set attributeName="href" to="javascript:alert(3)"/>
+    <foreignObject width="10" height="10"><div xmlns="http://www.w3.org/1999/xhtml">html</div></foreignObject>
+  </g>
+</svg>
+XML
+head -c 900 meta.svg > broken.svg

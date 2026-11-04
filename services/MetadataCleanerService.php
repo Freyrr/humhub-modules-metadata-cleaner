@@ -17,8 +17,11 @@ use humhub\modules\metadataCleaner\cleaners\HeifCleaner;
 use humhub\modules\metadataCleaner\cleaners\JpegCleaner;
 use humhub\modules\metadataCleaner\cleaners\MatroskaCleaner;
 use humhub\modules\metadataCleaner\cleaners\Mp3Cleaner;
+use humhub\modules\metadataCleaner\cleaners\OfficeCleaner;
 use humhub\modules\metadataCleaner\cleaners\OggCleaner;
+use humhub\modules\metadataCleaner\cleaners\PdfCleaner;
 use humhub\modules\metadataCleaner\cleaners\PngCleaner;
+use humhub\modules\metadataCleaner\cleaners\SvgCleaner;
 use humhub\modules\metadataCleaner\cleaners\TiffCleaner;
 use humhub\modules\metadataCleaner\cleaners\VideoCleaner;
 use humhub\modules\metadataCleaner\cleaners\WebpCleaner;
@@ -79,6 +82,9 @@ class MetadataCleanerService
             FormatDetector::TYPE_OGG => new OggCleaner(),
             FormatDetector::FORMAT_TIFF => new TiffCleaner(),
             FormatDetector::TYPE_DNG => new TiffCleaner(dng: true),
+            FormatDetector::FORMAT_PDF => new PdfCleaner(),
+            FormatDetector::FORMAT_OFFICE => new OfficeCleaner(),
+            FormatDetector::FORMAT_SVG => new SvgCleaner(),
         };
     }
 }
