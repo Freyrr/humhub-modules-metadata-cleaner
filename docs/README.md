@@ -15,6 +15,8 @@ When such a file is shared in a social network, every member who can download it
 
 ## Privacy laws it helps with
 
+_Last reviewed: November 4, 2026. Laws change: check the current text of the laws that apply to you._
+
 Removing data that is not needed is a basic principle of privacy laws around the world. Location data, in particular, is personal data almost everywhere, and in several jurisdictions it is a sensitive category. This module helps a HumHub operator apply these principles to uploaded files:
 
 **European Union and Europe**
