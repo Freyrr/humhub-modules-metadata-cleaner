@@ -94,3 +94,41 @@ for f in plain.tif multipage.tif; do
     exiftool -q -overwrite_original "${TAGS[@]}" -Artist="Mario Rossi" -IPTC:By-line="Mario Rossi" -Orientation#=6 "meta-$f"
 done
 head -c 400 meta-plain.tif > broken.tif
+
+# Audio, WebM/MKV and motion photos (needs ffmpeg with libmp3lame, libvorbis, libopus, libvpx).
+M=(-metadata title="Secret title" -metadata artist="Mario Rossi" -metadata comment="secret comment" -metadata date=2026-11-04)
+ffmpeg -loglevel error -y -f lavfi -i sine=frequency=440:duration=1 -c:a aac -b:a 64k plain.m4a
+ffmpeg -loglevel error -y -i plain.m4a -c copy "${M[@]}" -metadata location="+45.4642+009.1900/" -movflags use_metadata_tags meta.m4a
+ffmpeg -loglevel error -y -f lavfi -i sine=frequency=440:duration=1 -c:a libmp3lame -b:a 64k -write_xing 0 -id3v2_version 0 plain.mp3
+ffmpeg -loglevel error -y -f lavfi -i sine=frequency=440:duration=1 -c:a libmp3lame -b:a 64k -id3v2_version 4 -write_id3v1 1 "${M[@]}" meta.mp3
+# meta-ape.mp3: the same file with an APEv2 tag (before the ID3v1 tag), written by hand.
+python3 - <<'PY'
+import struct
+item=b'Mario Rossi'; key=b'Artist'
+items=struct.pack('<II',len(item),0)+key+b'\x00'+item
+size=len(items)+32
+footer=b'APETAGEX'+struct.pack('<IIII',2000,size,1,0)+b'\x00'*8
+data=open('meta.mp3','rb').read()
+v1=data[-128:]; assert v1[:3]==b'TAG'
+open('meta-ape.mp3','wb').write(data[:-128]+items+footer+v1)
+PY
+ffmpeg -loglevel error -y -f lavfi -i sine=frequency=440:duration=1 -c:a aac -b:a 64k -f adts -write_id3v2 1 "${M[@]}" meta.aac
+ffmpeg -loglevel error -y -f lavfi -i sine=frequency=440:duration=1 -c:a flac plain.flac
+ffmpeg -loglevel error -y -i plain.flac -i meta-plain.jpg -map 0 -map 1 -c:a copy -c:v copy -disposition:v attached_pic "${M[@]}" meta.flac
+ffmpeg -loglevel error -y -f lavfi -i sine=frequency=440:duration=1 -c:a libvorbis "${M[@]}" meta.ogg
+ffmpeg -loglevel error -y -f lavfi -i sine=frequency=440:duration=1 -c:a libopus "${M[@]}" meta.opus
+ffmpeg -loglevel error -y -f lavfi -i sine=frequency=440:duration=1 -c:a flac -f ogg "${M[@]}" meta-flac.oga
+ffmpeg -loglevel error -y -f lavfi -i testsrc=size=160x120:rate=10 -f lavfi -i sine=frequency=440 -t 1 -c:v libvpx-vp9 -b:v 100k -c:a libopus -shortest "${M[@]}" meta.webm
+ffmpeg -loglevel error -y -f lavfi -i testsrc=size=160x120:rate=10 -f lavfi -i sine=frequency=440 -t 1 -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest \
+   "${M[@]}" -metadata:s:a:0 title="Mario mic" -attach meta-plain.jpg -metadata:s:t mimetype=image/jpeg meta.mkv
+# Motion photos: a video appended to a JPEG (Google/Samsung) and an "mpvd" box after a HEIC.
+cp meta-plain.jpg motion.jpg
+exiftool -q -overwrite_original -XMP-GCamera:MicroVideo=1 -XMP-GCamera:MicroVideoOffset=$(stat -c%s meta.mp4) motion.jpg
+cat meta.mp4 >> motion.jpg
+python3 - <<'PY'
+import struct
+v=open('meta.mp4','rb').read()
+open('motion.heic','wb').write(open('meta.heic','rb').read()+struct.pack('>I',8+len(v))+b'mpvd'+v)
+PY
+head -c 40 meta.mp3 > broken.mp3
+for f in meta.flac meta.ogg meta.opus meta.webm meta.mkv meta.m4a; do head -c 700 "$f" > "broken.${f#meta.}"; done

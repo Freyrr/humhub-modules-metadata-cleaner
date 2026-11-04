@@ -57,6 +57,10 @@ class FieldExtractor
 
     private function name(MetadataBlock $block): string
     {
+        if ($block->type === MetadataBlock::TYPE_OTHER && str_contains($block->location, ':')) {
+            return $block->location;
+        }
+
         return strtoupper($block->type) . ':' . $block->location;
     }
 

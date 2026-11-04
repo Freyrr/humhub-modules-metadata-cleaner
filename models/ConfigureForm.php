@@ -91,7 +91,8 @@ class ConfigureForm extends Model
             FormatDetector::FORMAT_WEBP => 'WebP (.webp)',
             FormatDetector::FORMAT_GIF => 'GIF (.gif)',
             FormatDetector::FORMAT_HEIF => 'HEIC / HEIF / AVIF (.heic, .heif, .avif)',
-            FormatDetector::FORMAT_VIDEO => Yii::t('MetadataCleanerModule.base', 'Videos') . ' (.mp4, .mov, .m4v, .3gp)',
+            FormatDetector::FORMAT_VIDEO => Yii::t('MetadataCleanerModule.base', 'Videos') . ' (.mp4, .mov, .m4v, .3gp, .webm, .mkv)',
+            FormatDetector::FORMAT_AUDIO => Yii::t('MetadataCleanerModule.base', 'Audio') . ' (.m4a, .mp3, .aac, .flac, .ogg, .opus)',
             FormatDetector::FORMAT_TIFF => 'TIFF (.tif, .tiff)',
         ];
     }
