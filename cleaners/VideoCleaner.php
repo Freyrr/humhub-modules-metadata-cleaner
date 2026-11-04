@@ -230,66 +230,23 @@ final class VideoCleaner implements CleanerInterface
     }
 
     /**
-     * Copies the file, writes the free boxes into the copy, then replaces
-     * the original with it.
+     * Turns each planned range into a zero-filled free box of the same size.
      *
      * @param array<int, array{size: int, large: bool}> $patches
      */
     private function applyPatches(string $path, array $patches): void
     {
-        $tmp = @tempnam(dirname($path), '.mdc');
-        if ($tmp === false) {
-            throw new CleanerException('Cannot create temporary file.');
-        }
-        try {
-            if (!@copy($path, $tmp)) {
-                throw new CleanerException('Cannot copy file.');
-            }
-            $fh = @fopen($tmp, 'r+b');
-            if ($fh === false) {
-                throw new CleanerException('Cannot open temporary file.');
-            }
-            try {
-                foreach ($patches as $offset => $patch) {
-                    $this->writeFreeBox($fh, $offset, $patch['size'], $patch['large']);
-                }
-                fflush($fh);
-            } finally {
-                fclose($fh);
-            }
-            $perms = @fileperms($path);
-            if ($perms !== false) {
-                @chmod($tmp, $perms & 0777);
-            }
-            if (!@rename($tmp, $path)) {
-                throw new CleanerException('Cannot replace file.');
-            }
-        } finally {
-            if (is_file($tmp)) {
-                @unlink($tmp);
+        $writes = [];
+        foreach ($patches as $offset => $patch) {
+            $header = $patch['large']
+                ? pack('N', 1) . 'free' . pack('J', $patch['size'])
+                : pack('N', $patch['size']) . 'free';
+            $writes[$offset] = $header;
+            if ($patch['size'] > strlen($header)) {
+                $writes[$offset + strlen($header)] = $patch['size'] - strlen($header);
             }
         }
-        clearstatcache(true, $path);
-    }
-
-    /**
-     * @param resource $fh
-     */
-    private function writeFreeBox($fh, int $offset, int $size, bool $large): void
-    {
-        $header = $large ? pack('N', 1) . 'free' . pack('J', $size) : pack('N', $size) . 'free';
-        if (fseek($fh, $offset) !== 0 || fwrite($fh, $header) !== strlen($header)) {
-            throw new CleanerException('Cannot write file.');
-        }
-        $left = $size - strlen($header);
-        $zeros = str_repeat("\x00", 65536);
-        while ($left > 0) {
-            $n = min($left, 65536);
-            if (fwrite($fh, $n === 65536 ? $zeros : substr($zeros, 0, $n)) !== $n) {
-                throw new CleanerException('Cannot write file.');
-            }
-            $left -= $n;
-        }
+        FilePatcher::apply($path, $writes);
     }
 
     /**

@@ -25,6 +25,7 @@ class ImageCleanersTest extends CleanerTestCase
             'png' => ['meta.png', FormatDetector::FORMAT_PNG],
             'webp' => ['meta.webp', FormatDetector::FORMAT_WEBP],
             'gif' => ['meta.gif', FormatDetector::FORMAT_GIF],
+            'heic' => ['meta.heic', FormatDetector::FORMAT_HEIF],
         ];
     }
 
@@ -35,6 +36,7 @@ class ImageCleanersTest extends CleanerTestCase
             'png' => ['broken.png'],
             'webp' => ['broken.webp'],
             'gif' => ['broken.gif'],
+            'heic' => ['broken.heic'],
         ];
     }
 
@@ -59,6 +61,16 @@ class ImageCleanersTest extends CleanerTestCase
      */
     public function testDoesNotReencode(string $name): void
     {
+        if (str_ends_with($name, '.heic')) {
+            // GD cannot decode HEIC: the bytes of the image item are compared instead.
+            $path = $this->copyFixture($name);
+            $before = file_get_contents($path);
+            (new MetadataCleanerService())->cleanPath($path);
+            $after = file_get_contents($path);
+            $this->assertSame(strlen($before), strlen($after));
+            $this->assertSame(substr($before, -10000), substr($after, -10000));
+            return;
+        }
         $path = $this->copyFixture($name);
         $before = $this->pixels($path);
 

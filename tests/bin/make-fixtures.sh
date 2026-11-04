@@ -69,3 +69,19 @@ exiftool -q -overwrite_original -XMP:CreatorTool=Tester -UserData:Make=TestPhone
 ffmpeg -loglevel error -y -i meta.mp4 -c copy -map_metadata 0 -movflags +faststart+use_metadata_tags meta-faststart.mp4
 exiftool -q -overwrite_original -XMP:CreatorTool=Tester meta-faststart.mp4
 head -c 5000 meta.mp4 > broken.mp4
+
+# HEIC (needs Python with pillow-heif: pip install pillow-heif).
+python3 - <<'PY'
+import pillow_heif, PIL.Image as Image
+pillow_heif.register_heif_opener()
+im = Image.new('RGB', (160, 100))
+px = im.load()
+for x in range(160):
+    for y in range(100):
+        px[x, y] = ((x * 3) % 256, (y * 5) % 256, (x * y) % 256)
+im.save('plain.heic', quality=90)
+PY
+cp plain.heic meta.heic
+exiftool -q -overwrite_original -GPSLatitude=45.4642 -GPSLatitudeRef=N -GPSLongitude=9.19 -GPSLongitudeRef=E \
+    -Make=TestPhone -Model=X1 -SerialNumber=SN1 -XMP:CreatorTool=Tester meta.heic
+head -c 300 meta.heic > broken.heic
