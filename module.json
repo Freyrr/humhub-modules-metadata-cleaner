@@ -1,0 +1,20 @@
+{
+    "id": "metadata-cleaner",
+    "version": "0.1.0",
+    "name": "Metadata Cleaner",
+    "description": "Removes EXIF, XMP and IPTC metadata (GPS included) from uploaded images and videos without re-encoding them.",
+    "humhub": {
+        "minVersion": "1.19"
+    },
+    "keywords": ["metadata", "exif", "xmp", "iptc", "gps", "privacy", "gdpr", "upload", "files"],
+    "screenshots": [],
+    "homepage": "https://github.com/Freyrr/humhub-modules-metadata-cleaner",
+    "authors": [
+        {
+            "name": "Tommaso",
+            "homepage": "https://github.com/Freyrr",
+            "role": "Developer"
+        }
+    ],
+    "licence": "AGPL-3.0-or-later"
+}
