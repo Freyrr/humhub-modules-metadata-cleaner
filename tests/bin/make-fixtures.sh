@@ -57,3 +57,15 @@ cp meta-plain.jpg trailer.jpg
 printf 'SEFHMotionPhoto_Data secret trailer' >> trailer.jpg
 
 ls -l
+
+# Videos (needs ffmpeg). Metadata in moov/udta, moov/meta (Apple keys) and XMP.
+ffmpeg -loglevel error -y -f lavfi -i testsrc=size=160x120:rate=10 -f lavfi -i sine=frequency=440 -t 1 \
+    -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest plain.mp4
+ffmpeg -loglevel error -y -i plain.mp4 -c copy -metadata location="+45.4642+009.1900/" -metadata make=TestPhone \
+    -metadata model=X1 -metadata title=Secret -movflags use_metadata_tags meta.mp4
+ffmpeg -loglevel error -y -i plain.mp4 -c copy -f mov -metadata location="+45.4642+009.1900/" \
+    -metadata "com.apple.quicktime.make=Apple" -metadata "com.apple.quicktime.model=iPhone" -movflags use_metadata_tags meta.mov
+exiftool -q -overwrite_original -XMP:CreatorTool=Tester -UserData:Make=TestPhone meta.mp4
+ffmpeg -loglevel error -y -i meta.mp4 -c copy -map_metadata 0 -movflags +faststart+use_metadata_tags meta-faststart.mp4
+exiftool -q -overwrite_original -XMP:CreatorTool=Tester meta-faststart.mp4
+head -c 5000 meta.mp4 > broken.mp4

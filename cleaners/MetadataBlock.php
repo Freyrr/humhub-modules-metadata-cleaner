@@ -28,6 +28,14 @@ final class MetadataBlock
         public readonly int $size,
         /** Raw bytes of the block, only when CleanOptions::$collectPayloads is set. */
         public readonly ?string $payload = null,
+        /**
+         * Field name => value pairs already decoded by the cleaner, for formats
+         * whose metadata the generic readers do not understand (QuickTime).
+         * Only filled when CleanOptions::$collectPayloads is set.
+         *
+         * @var array<string, string>
+         */
+        public readonly array $fields = [],
     ) {
     }
 }
