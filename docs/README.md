@@ -42,7 +42,7 @@ Note that the optional log of the module can itself store personal data (for exa
 
 ## Features
 
-- Cleans **JPEG, PNG/APNG, WebP, GIF, HEIC/HEIF/AVIF, TIFF and DNG raw** images, **MP4/MOV/3GP and WebM/MKV** videos and **M4A, MP3, AAC, FLAC, Ogg and Opus** audio files, including the short videos of motion photos. Each file type can be switched on or off; all are on by default.
+- Cleans **JPEG, PNG/APNG, WebP, GIF, HEIC/HEIF/AVIF, TIFF, DNG raw and SVG** images, **MP4/MOV/3GP and WebM/MKV** videos, **M4A, MP3, AAC, FLAC, Ogg and Opus** audio files, and **PDF, Office (DOCX, XLSX, PPTX) and OpenDocument (ODT, ODS, ODP)** documents, including the short videos of motion photos. SVG images are also cleaned of scripts. Each file type can be switched on or off; all are on by default.
 - The file type is detected from the file content, never from its name, so a renamed file is still cleaned.
 - Keeps what is needed to show the file correctly: colour profiles and, optionally, the EXIF Orientation tag (without it some phone photos are shown rotated).
 - Works on every upload path: the web uploader, the REST API, imports and other modules.
@@ -52,11 +52,23 @@ Note that the optional log of the module can itself store personal data (for exa
 - Pure PHP: no external program or library is needed at runtime.
 - Available in English, Italian, Spanish, French, German, Portuguese and Simplified Chinese.
 
+## What the module does not cover
+
+The module removes the metadata stored in the file formats listed above. It does not, and cannot, make every upload anonymous. In particular:
+
+- **What the file shows or says.** Faces, number plates, street signs, screen contents, text in a document, voices in a recording: anything that is part of the picture, sound or text itself is not changed.
+- **The file name.** HumHub keeps the name of the uploaded file (for example `IMG_20261104_Milano.jpg` or `CV Mario Rossi.pdf`), which can itself contain personal data.
+- **Content of documents.** In Office and OpenDocument files only the document properties are removed: comments and their authors, tracked changes, hidden text, speaker notes, and the metadata of pictures embedded in the document stay as they are. In PDF files the metadata of embedded images and attached files is not changed.
+- **Other file types.** Camera RAW formats other than DNG (CR2, CR3, NEF, ARW, ORF, RW2, RAF...), AVI/WMV, WAV/AIFF, legacy Office files (DOC, XLS, PPT), RTF, EPUB, flat OpenDocument XML files, compressed SVG (SVGZ), PSD, JPEG XL, archives (ZIP, RAR, 7z) and their contents are stored unchanged.
+- **Files that cannot be cleaned safely.** Encrypted PDF files, PDF streams with unusual compression, ZIP64 or encrypted Office files, SVG files with entity declarations and damaged files are passed on unchanged (or rejected, depending on the settings), and the error is logged.
+- **Technical data that is kept on purpose,** because the file needs it: the EXIF orientation tag (optional), colour profiles, the camera model name that DNG files require (`UniqueCameraModel`), the encoder name inside Ogg and AAC audio streams, and the empty application fields that Matroska requires.
+- **Files uploaded before the module was enabled**, and images that HumHub stores outside the file library (such as profile and space images), are not processed.
+
 ## Requirements
 
 - HumHub 1.19 or later.
 - PHP 8.2 or later (the minimum of HumHub 1.19).
-- PHP extensions: `dom`, `libxml`, `mbstring` and `json`. HumHub already requires all of them.
+- PHP extensions: `dom`, `libxml`, `mbstring`, `json` and `zlib`, which are part of almost every PHP installation. Without `zlib`, PDF files with compressed metadata and some Office files are passed on unchanged (and logged as errors).
 - No Composer packages and no external programs (exiftool, ImageMagick, ffmpeg...) at runtime. Those tools are used only by the test suite.
 
 See [MANUAL.md](MANUAL.md) for the settings and the console commands.

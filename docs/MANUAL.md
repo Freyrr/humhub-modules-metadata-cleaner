@@ -29,7 +29,12 @@
 | TIFF | all tags not needed to decode the image (EXIF, GPS, XMP, IPTC, device and author tags) | image data and the tags that describe it |
 | RAW DNG | as TIFF, plus maker notes (DNGPrivateData), original raw file name and data, preview application, settings and date | raw image data and the DNG tags needed to develop it (CFA layout, colour matrices, calibration, UniqueCameraModel, opcodes) |
 
-Files of any other type are not changed.
+| PDF | document information dictionaries (author, title, subject, keywords, creator, producer, dates, custom entries) of every revision, also inside compressed object streams; every XMP metadata stream | pages, fonts, images and the file structure: everything is overwritten in place with data of the same size |
+| Office (DOCX, XLSX, PPTX...) | docProps/core.xml, app.xml and custom.xml (author, last modified by, company, manager, template, editing time, custom properties) | every other part of the document, copied byte for byte |
+| OpenDocument (ODT, ODS, ODP...) | meta.xml (creator, dates, editing time, generator, user-defined fields) | every other part of the document, copied byte for byte |
+| SVG | metadata, comments, editor data (Inkscape, Sodipodi, Illustrator, Sketch...), scripts, event attributes, javascript: links, foreignObject, embedded frames | the drawing |
+
+Files of any other type are not changed. See the README for what the module does not cover.
 
 ## Console commands
 

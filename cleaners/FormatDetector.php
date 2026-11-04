@@ -21,12 +21,19 @@ final class FormatDetector
     public const FORMAT_TIFF = 'tiff';
     public const FORMAT_AUDIO = 'audio';
     public const FORMAT_RAW = 'raw';
+    public const FORMAT_PDF = 'pdf';
+    public const FORMAT_OFFICE = 'office';
+    public const FORMAT_SVG = 'svg';
 
     /** Format groups, as switched on and off in the settings. */
     public const ALL_FORMATS = [
         self::FORMAT_JPEG, self::FORMAT_PNG, self::FORMAT_WEBP, self::FORMAT_GIF,
         self::FORMAT_HEIF, self::FORMAT_VIDEO, self::FORMAT_AUDIO, self::FORMAT_TIFF, self::FORMAT_RAW,
+        self::FORMAT_PDF, self::FORMAT_OFFICE, self::FORMAT_SVG,
     ];
+
+    /** Bytes read at the start of a text file to find the <svg> root. */
+    private const SVG_HEAD_BYTES = 4096;
 
     /** Container types inside the groups, used to pick the cleaner. */
     public const TYPE_MP4 = 'mp4';
@@ -88,6 +95,9 @@ final class FormatDetector
             $type = self::detectTypeFromBytes($head);
             if ($type === self::FORMAT_TIFF) {
                 $type = self::tiffType($fh, $head);
+            } elseif ($type === null && self::looksLikeXml($head)) {
+                fseek($fh, 0);
+                $type = self::svgType((string)fread($fh, self::SVG_HEAD_BYTES));
             }
         } finally {
             fclose($fh);
@@ -130,6 +140,22 @@ final class FormatDetector
         return self::FORMAT_TIFF;
     }
 
+    private static function looksLikeXml(string $head): bool
+    {
+        return str_starts_with(ltrim(str_starts_with($head, "\xEF\xBB\xBF") ? substr($head, 3) : $head), '<');
+    }
+
+    /**
+     * An XML file whose first element is <svg>.
+     */
+    public static function svgType(string $text): ?string
+    {
+        // Skip the declaration, comments, processing instructions and the doctype.
+        $text = preg_replace('/<\?.*?\?>|<!--.*?-->|<!DOCTYPE[^>\[]*(\[.*?\])?\s*>/s', '', $text) ?? '';
+
+        return preg_match('/^\s*<(?:[A-Za-z_][\w.-]*:)?svg[\s>\/]/', ltrim($text, "\xEF\xBB\xBF")) ? self::FORMAT_SVG : null;
+    }
+
     public static function group(?string $type): ?string
     {
         return $type === null ? null : (self::TYPE_GROUPS[$type] ?? $type);
@@ -165,6 +191,12 @@ final class FormatDetector
         }
         if (str_starts_with($head, "\x1A\x45\xDF\xA3")) {
             return self::TYPE_MATROSKA;
+        }
+        if (str_starts_with($head, '%PDF-')) {
+            return self::FORMAT_PDF;
+        }
+        if (str_starts_with($head, "PK\x03\x04")) {
+            return self::FORMAT_OFFICE;
         }
         if (str_starts_with($head, 'fLaC')) {
             return self::TYPE_FLAC;
