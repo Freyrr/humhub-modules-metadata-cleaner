@@ -14,16 +14,21 @@ use humhub\modules\metadataCleaner\Module;
 use humhub\modules\metadataCleaner\services\LogService;
 use Throwable;
 use Yii;
+use yii\base\InlineAction;
 use yii\console\Controller;
 use yii\console\ExitCode;
 use yii\helpers\Console;
 
 /**
- * Cleans files uploaded before the module was enabled, and purges the log.
+ * Purges expired log entries.
  *
  * Usage:
- *   php yii metadata-cleaner/clean [--dry-run] [--batch=100] [--from-id=0]
  *   php yii metadata-cleaner/purge-log
+ *
+ * The bulk cleaning of all stored files (`metadata-cleaner/clean`) is
+ * intentionally not documented and not listed by `php yii help`: it reads
+ * every file and can take a long time and many resources. It is run by
+ * {@see runClean()} through {@see createAction()}.
  */
 class CleanController extends Controller
 {
@@ -36,7 +41,7 @@ class CleanController extends Controller
     /** Start after this file id, to resume an interrupted run. */
     public int $fromId = 0;
 
-    public $defaultAction = 'clean';
+    public $defaultAction = 'purge-log';
 
     public function options($actionID)
     {
@@ -49,9 +54,22 @@ class CleanController extends Controller
     }
 
     /**
-     * Removes metadata from all stored files.
+     * Maps the hidden "clean" action to {@see runClean()}. A method named
+     * actionClean() would be listed by `php yii help`.
      */
-    public function actionClean(): int
+    public function createAction($id)
+    {
+        if ($id === 'clean') {
+            return new InlineAction('clean', $this, 'runClean');
+        }
+
+        return parent::createAction($id);
+    }
+
+    /**
+     * Removes metadata from all stored files (hidden "clean" action).
+     */
+    public function runClean(): int
     {
         $module = $this->getModule();
         $service = $module->getCleanerService();

@@ -26,13 +26,7 @@
 
 Files of any other type (documents, archives, audio...) are not changed.
 
-## Console commands
-
-```
-php yii metadata-cleaner/clean [--dry-run] [--batch=100] [--from-id=0]
-```
-
-Cleans the files already stored, for example those uploaded before the module was enabled. Previews are deleted and re-created by HumHub when needed. `--dry-run` only lists the files that would change. `--from-id` resumes an interrupted run after the given file id.
+## Console command
 
 ```
 php yii metadata-cleaner/purge-log

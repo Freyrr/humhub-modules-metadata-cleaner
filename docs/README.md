@@ -48,7 +48,6 @@ Note that the optional log of the module can itself store personal data (for exa
 - Works on every upload path: the web uploader, the REST API, imports and other modules.
 - Robust: every error is caught. By default a file that cannot be cleaned is accepted unchanged and the error is logged; it can be configured to reject the file instead.
 - Optional log (off / field names only / names and values) with the result of each run, the uploading user, file name, type and size, and automatic deletion after a configurable number of days. Visible to system administrators only.
-- Console command to clean files uploaded before the module was enabled.
 - Pure PHP: no external program or library is needed at runtime.
 - Available in English, Italian, Spanish, French, German, Portuguese and Simplified Chinese.
 
@@ -59,4 +58,4 @@ Note that the optional log of the module can itself store personal data (for exa
 - PHP extensions: `dom`, `libxml`, `mbstring` and `json`. HumHub already requires all of them.
 - No Composer packages and no external programs (exiftool, ImageMagick, ffmpeg...) at runtime. Those tools are used only by the test suite.
 
-See [MANUAL.md](MANUAL.md) for the settings and the console commands.
+See [MANUAL.md](MANUAL.md) for the settings and the console command.
