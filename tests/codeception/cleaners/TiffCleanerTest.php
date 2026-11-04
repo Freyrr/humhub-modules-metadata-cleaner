@@ -154,13 +154,13 @@ class TiffCleanerTest extends CleanerTestCase
         $this->assertSame(FormatDetector::TYPE_DNG, FormatDetector::detectType($this->fixture('meta.dng')));
         $this->assertSame(FormatDetector::FORMAT_TIFF, FormatDetector::detectType($this->fixture('meta-plain.tif')));
 
-        // A Canon CR2 header, and a TIFF-like raw with SubIFDs and Make (NEF, ARW...): not handled.
+        // A Canon CR2 header, and a TIFF-like raw with SubIFDs and Make (NEF, ARW...).
         $cr2 = $this->copyFixture('plain.tif');
         file_put_contents($cr2, "II*\x00\x10\x00\x00\x00CR\x02\x00" . str_repeat("\x00", 100));
-        $this->assertNull(FormatDetector::detectType($cr2));
+        $this->assertSame(FormatDetector::TYPE_RAW, FormatDetector::detectType($cr2));
         $nef = $this->copyFixture('plain.tif');
         file_put_contents($nef, "II*\x00\x08\x00\x00\x00\x02\x00" . pack('vvVV', 0x010F, 2, 4, 0x4E494B4E) . pack('vvVV', 0x014A, 4, 1, 100) . "\x00\x00\x00\x00");
-        $this->assertNull(FormatDetector::detectType($nef));
+        $this->assertSame(FormatDetector::TYPE_RAW, FormatDetector::detectType($nef));
     }
 
     public function testDisabledRawIsNotTouched(): void

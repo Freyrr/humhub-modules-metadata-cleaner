@@ -24,12 +24,13 @@ final class FormatDetector
     public const FORMAT_PDF = 'pdf';
     public const FORMAT_OFFICE = 'office';
     public const FORMAT_SVG = 'svg';
+    public const FORMAT_PSD = 'psd';
 
     /** Format groups, as switched on and off in the settings. */
     public const ALL_FORMATS = [
         self::FORMAT_JPEG, self::FORMAT_PNG, self::FORMAT_WEBP, self::FORMAT_GIF,
         self::FORMAT_HEIF, self::FORMAT_VIDEO, self::FORMAT_AUDIO, self::FORMAT_TIFF, self::FORMAT_RAW,
-        self::FORMAT_PDF, self::FORMAT_OFFICE, self::FORMAT_SVG,
+        self::FORMAT_PDF, self::FORMAT_OFFICE, self::FORMAT_SVG, self::FORMAT_PSD,
     ];
 
     /** Bytes read at the start of a text file to find the <svg> root. */
@@ -43,15 +44,31 @@ final class FormatDetector
     public const TYPE_FLAC = 'flac';
     public const TYPE_OGG = 'ogg';
     public const TYPE_DNG = 'dng';
+    public const TYPE_RAW = 'raw';
+    public const TYPE_WAV = 'wav';
+    public const TYPE_AIFF = 'aiff';
+    public const TYPE_AVI = 'avi';
+    public const TYPE_ASF = 'asf';
+    public const TYPE_PSD = 'psd';
+    public const TYPE_JP2 = 'jp2';
+    public const TYPE_JXL = 'jxl';
 
     private const TYPE_GROUPS = [
         self::TYPE_MP4 => self::FORMAT_VIDEO,
         self::TYPE_MATROSKA => self::FORMAT_VIDEO,
+        self::TYPE_AVI => self::FORMAT_VIDEO,
+        self::TYPE_ASF => self::FORMAT_VIDEO,
         self::TYPE_M4A => self::FORMAT_AUDIO,
         self::TYPE_MP3 => self::FORMAT_AUDIO,
         self::TYPE_FLAC => self::FORMAT_AUDIO,
         self::TYPE_OGG => self::FORMAT_AUDIO,
+        self::TYPE_WAV => self::FORMAT_AUDIO,
+        self::TYPE_AIFF => self::FORMAT_AUDIO,
         self::TYPE_DNG => self::FORMAT_RAW,
+        self::TYPE_RAW => self::FORMAT_RAW,
+        self::TYPE_PSD => self::FORMAT_PSD,
+        self::TYPE_JP2 => self::FORMAT_JPEG,
+        self::TYPE_JXL => self::FORMAT_JPEG,
     ];
 
     private const TAG_DNG_VERSION = 0xC612;
@@ -116,7 +133,7 @@ final class FormatDetector
     private static function tiffType($fh, string $head): ?string
     {
         if (substr($head, 8, 2) === 'CR') {
-            return null;
+            return self::TYPE_RAW;
         }
         $u16 = $head[0] === 'I' ? 'v' : 'n';
         $u32 = $head[0] === 'I' ? 'V' : 'N';
@@ -134,7 +151,7 @@ final class FormatDetector
             return self::TYPE_DNG;
         }
         if (isset($tags[self::TAG_SUB_IFDS]) && isset($tags[self::TAG_MAKE])) {
-            return null;
+            return self::TYPE_RAW;
         }
 
         return self::FORMAT_TIFF;
@@ -177,8 +194,28 @@ final class FormatDetector
         if (str_starts_with($head, 'GIF87a') || str_starts_with($head, 'GIF89a')) {
             return self::FORMAT_GIF;
         }
-        if (str_starts_with($head, 'RIFF') && substr($head, 8, 4) === 'WEBP') {
-            return self::FORMAT_WEBP;
+        if (str_starts_with($head, 'RIFF') || str_starts_with($head, 'RF64')) {
+            return match (substr($head, 8, 4)) {
+                'WEBP' => self::FORMAT_WEBP,
+                'WAVE' => self::TYPE_WAV,
+                'AVI ' => self::TYPE_AVI,
+                default => null,
+            };
+        }
+        if (str_starts_with($head, 'FORM') && in_array(substr($head, 8, 4), ['AIFF', 'AIFC'], true)) {
+            return self::TYPE_AIFF;
+        }
+        if (str_starts_with($head, "\x30\x26\xB2\x75\x8E\x66\xCF\x11\xA6\xD9\x00\xAA\x00\x62\xCE\x6C")) {
+            return self::TYPE_ASF;
+        }
+        if (str_starts_with($head, '8BPS')) {
+            return self::TYPE_PSD;
+        }
+        if (str_starts_with($head, "\x00\x00\x00\x0CjP  \r\n\x87\n")) {
+            return self::TYPE_JP2;
+        }
+        if (str_starts_with($head, "\x00\x00\x00\x0CJXL \r\n\x87\n")) {
+            return self::TYPE_JXL;
         }
         if (str_starts_with($head, "II*\x00") || str_starts_with($head, "MM\x00*")) {
             return self::FORMAT_TIFF;

@@ -6,6 +6,8 @@
 
 namespace humhub\modules\metadataCleaner\services;
 
+use humhub\modules\metadataCleaner\cleaners\AiffCleaner;
+use humhub\modules\metadataCleaner\cleaners\AsfCleaner;
 use humhub\modules\metadataCleaner\cleaners\CleanerException;
 use humhub\modules\metadataCleaner\cleaners\CleanerInterface;
 use humhub\modules\metadataCleaner\cleaners\CleanOptions;
@@ -14,13 +16,17 @@ use humhub\modules\metadataCleaner\cleaners\FlacCleaner;
 use humhub\modules\metadataCleaner\cleaners\FormatDetector;
 use humhub\modules\metadataCleaner\cleaners\GifCleaner;
 use humhub\modules\metadataCleaner\cleaners\HeifCleaner;
+use humhub\modules\metadataCleaner\cleaners\Jp2Cleaner;
 use humhub\modules\metadataCleaner\cleaners\JpegCleaner;
+use humhub\modules\metadataCleaner\cleaners\JxlCleaner;
 use humhub\modules\metadataCleaner\cleaners\MatroskaCleaner;
 use humhub\modules\metadataCleaner\cleaners\Mp3Cleaner;
 use humhub\modules\metadataCleaner\cleaners\OfficeCleaner;
 use humhub\modules\metadataCleaner\cleaners\OggCleaner;
 use humhub\modules\metadataCleaner\cleaners\PdfCleaner;
 use humhub\modules\metadataCleaner\cleaners\PngCleaner;
+use humhub\modules\metadataCleaner\cleaners\PsdCleaner;
+use humhub\modules\metadataCleaner\cleaners\RiffCleaner;
 use humhub\modules\metadataCleaner\cleaners\SvgCleaner;
 use humhub\modules\metadataCleaner\cleaners\TiffCleaner;
 use humhub\modules\metadataCleaner\cleaners\VideoCleaner;
@@ -80,7 +86,13 @@ class MetadataCleanerService
             FormatDetector::TYPE_FLAC => new FlacCleaner(),
             FormatDetector::TYPE_OGG => new OggCleaner(),
             FormatDetector::FORMAT_TIFF => new TiffCleaner(),
-            FormatDetector::TYPE_DNG => new TiffCleaner(dng: true),
+            FormatDetector::TYPE_DNG, FormatDetector::TYPE_RAW => new TiffCleaner(dng: true),
+            FormatDetector::TYPE_WAV, FormatDetector::TYPE_AVI => new RiffCleaner(),
+            FormatDetector::TYPE_ASF => new AsfCleaner(),
+            FormatDetector::TYPE_AIFF => new AiffCleaner(),
+            FormatDetector::TYPE_PSD => new PsdCleaner(),
+            FormatDetector::TYPE_JP2 => new Jp2Cleaner(),
+            FormatDetector::TYPE_JXL => new JxlCleaner(),
             FormatDetector::FORMAT_PDF => new PdfCleaner(),
             FormatDetector::FORMAT_OFFICE => new OfficeCleaner(),
             FormatDetector::FORMAT_SVG => new SvgCleaner(),

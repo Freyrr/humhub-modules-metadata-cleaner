@@ -91,13 +91,14 @@ class ConfigureForm extends Model
             FormatDetector::FORMAT_WEBP => 'WebP (.webp)',
             FormatDetector::FORMAT_GIF => 'GIF (.gif)',
             FormatDetector::FORMAT_HEIF => 'HEIC / HEIF / AVIF (.heic, .heif, .avif)',
-            FormatDetector::FORMAT_VIDEO => Yii::t('MetadataCleanerModule.base', 'Videos') . ' (.mp4, .mov, .m4v, .3gp, .webm, .mkv)',
-            FormatDetector::FORMAT_AUDIO => Yii::t('MetadataCleanerModule.base', 'Audio') . ' (.m4a, .mp3, .aac, .flac, .ogg, .opus)',
+            FormatDetector::FORMAT_VIDEO => Yii::t('MetadataCleanerModule.base', 'Videos') . ' (.mp4, .mov, .m4v, .3gp, .webm, .mkv, .avi, .wmv)',
+            FormatDetector::FORMAT_AUDIO => Yii::t('MetadataCleanerModule.base', 'Audio') . ' (.m4a, .mp3, .aac, .flac, .ogg, .opus, .wav, .aiff)',
             FormatDetector::FORMAT_TIFF => 'TIFF (.tif, .tiff)',
-            FormatDetector::FORMAT_RAW => 'RAW DNG (.dng)',
+            FormatDetector::FORMAT_RAW => 'RAW (.dng, .cr2, .nef, .arw, .orf, .rw2)',
             FormatDetector::FORMAT_PDF => 'PDF (.pdf)',
             FormatDetector::FORMAT_OFFICE => 'Office / OpenDocument (.docx, .xlsx, .pptx, .odt, .ods, .odp)',
             FormatDetector::FORMAT_SVG => 'SVG (.svg)',
+            FormatDetector::FORMAT_PSD => 'Photoshop (.psd, .psb)',
         ];
     }
 
