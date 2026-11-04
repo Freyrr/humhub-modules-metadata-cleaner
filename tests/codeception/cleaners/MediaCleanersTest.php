@@ -94,13 +94,14 @@ class MediaCleanersTest extends CleanerTestCase
         $this->requireFfmpeg();
         $path = $this->copyFixture($name);
         $before = $this->packets($path);
+        $errorsBefore = $this->decodeErrors($path);
 
         (new MetadataCleanerService())->cleanPath($path);
 
         $this->assertSame($before, $this->packets($path));
-        exec('ffmpeg -v error -i ' . escapeshellarg($path) . ' -f null - 2>&1', $errors, $code);
-        $this->assertSame(0, $code);
-        $this->assertSame([], $errors);
+        // Some ffmpeg versions complain about the test files themselves:
+        // cleaning must not add any new decoder message.
+        $this->assertSame($errorsBefore, $this->decodeErrors($path));
     }
 
     /**
@@ -277,7 +278,28 @@ class MediaCleanersTest extends CleanerTestCase
     private function packets(string $path): string
     {
         exec('ffmpeg -v error -i ' . escapeshellarg($path) . ' -map 0:a? -map 0:V? -c copy -f streamhash -hash md5 - 2>/dev/null', $out);
+        // Codec setup data of the same streams (for example the Opus and Vorbis
+        // headers); cover pictures are metadata and are left out.
+        exec('ffprobe -v error -show_data_hash md5 -show_entries stream=codec_type,codec_name,extradata_hash:stream_disposition=attached_pic -of csv=p=0 ' . escapeshellarg($path) . ' 2>/dev/null', $streams);
+        foreach ($streams as $stream) {
+            if (preg_match('/,(audio|video),.*,0$/', $stream)) {
+                $out[] = $stream;
+            }
+        }
 
         return implode("\n", $out);
+    }
+
+    /**
+     * Messages of a full decode, without the memory addresses that change on every run.
+     *
+     * @return string[]
+     */
+    private function decodeErrors(string $path): array
+    {
+        exec('ffmpeg -v error -i ' . escapeshellarg($path) . ' -f null - 2>&1', $errors, $code);
+        $this->assertSame(0, $code, implode("\n", $errors));
+
+        return array_map(static fn(string $line) => preg_replace('/ @ 0x[0-9a-f]+\]/', ']', $line), $errors);
     }
 }
