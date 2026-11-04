@@ -9,6 +9,7 @@ namespace humhub\modules\metadataCleaner\models;
 use humhub\components\ActiveRecord;
 use humhub\modules\file\models\File;
 use humhub\modules\user\models\User;
+use Yii;
 
 /**
  * One row per file that had metadata removed.
@@ -55,6 +56,33 @@ class MetadataLog extends ActiveRecord
     {
         // created_at/created_by are set explicitly by LogService.
         return \yii\db\ActiveRecord::beforeSave($insert);
+    }
+
+    public function attributeLabels()
+    {
+        return [
+            'id' => 'ID',
+            'file_name' => Yii::t('MetadataCleanerModule.base', 'File'),
+            'mime_type' => Yii::t('MetadataCleanerModule.base', 'MIME type'),
+            'size_before' => Yii::t('MetadataCleanerModule.base', 'Size before'),
+            'size_after' => Yii::t('MetadataCleanerModule.base', 'Size after'),
+            'status' => Yii::t('MetadataCleanerModule.base', 'Result'),
+            'error' => Yii::t('MetadataCleanerModule.base', 'Error'),
+            'format' => Yii::t('MetadataCleanerModule.base', 'Format'),
+            'source' => Yii::t('MetadataCleanerModule.base', 'Source'),
+            'metadata' => Yii::t('MetadataCleanerModule.base', 'Removed metadata'),
+            'created_by' => Yii::t('MetadataCleanerModule.base', 'Uploaded by'),
+            'created_at' => Yii::t('MetadataCleanerModule.base', 'Uploaded at'),
+        ];
+    }
+
+    public static function statusLabels(): array
+    {
+        return [
+            self::STATUS_CLEANED => Yii::t('MetadataCleanerModule.base', 'Cleaned'),
+            self::STATUS_PASSED => Yii::t('MetadataCleanerModule.base', 'Error, accepted unchanged'),
+            self::STATUS_REJECTED => Yii::t('MetadataCleanerModule.base', 'Error, rejected'),
+        ];
     }
 
     public function getFile()

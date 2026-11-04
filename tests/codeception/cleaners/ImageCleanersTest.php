@@ -159,6 +159,17 @@ class ImageCleanersTest extends CleanerTestCase
         $this->assertContains('trailer', array_map(static fn(MetadataBlock $b) => $b->location, $result->removed));
     }
 
+    public function testDisabledFormatIsNotTouched(): void
+    {
+        $path = $this->copyFixture('meta-plain.jpg');
+        $before = file_get_contents($path);
+
+        $result = (new MetadataCleanerService(new CleanOptions(), false, [FormatDetector::FORMAT_PNG]))->cleanPath($path);
+
+        $this->assertNull($result->format);
+        $this->assertSame($before, file_get_contents($path));
+    }
+
     public function testUnknownFormatIsNotTouched(): void
     {
         $path = tempnam(sys_get_temp_dir(), 'mdct');

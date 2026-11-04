@@ -25,9 +25,13 @@ use humhub\modules\metadataCleaner\cleaners\WebpCleaner;
  */
 class MetadataCleanerService
 {
+    /**
+     * @param string[] $formats formats to clean; files of other formats are left as they are
+     */
     public function __construct(
         private readonly CleanOptions $options = new CleanOptions(),
         private readonly bool $allowTiff = false,
+        private readonly array $formats = FormatDetector::ALL_FORMATS,
     ) {
     }
 
@@ -42,7 +46,7 @@ class MetadataCleanerService
     public function cleanPath(string $path): CleanResult
     {
         $format = FormatDetector::detect($path);
-        if ($format === null) {
+        if ($format === null || !in_array($format, $this->formats, true)) {
             return CleanResult::notHandled();
         }
 

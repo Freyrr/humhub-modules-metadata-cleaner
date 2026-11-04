@@ -7,6 +7,7 @@
 namespace humhub\modules\metadataCleaner;
 
 use humhub\modules\metadataCleaner\cleaners\CleanOptions;
+use humhub\modules\metadataCleaner\cleaners\FormatDetector;
 use humhub\modules\metadataCleaner\services\MetadataCleanerService;
 use Yii;
 use yii\helpers\Url;
@@ -20,6 +21,7 @@ use yii\helpers\Url;
  * - keepOrientation: keep the EXIF Orientation tag
  * - tiffPolicy: one of the TIFF_* constants
  * - onError: one of the ON_ERROR_* constants
+ * - formats: comma-separated FormatDetector::FORMAT_* values to clean (default: all)
  */
 class Module extends \humhub\components\Module
 {
@@ -72,6 +74,21 @@ class Module extends \humhub\components\Module
             ? self::ON_ERROR_REJECT : self::ON_ERROR_PASS;
     }
 
+    /**
+     * Formats the admin chose to clean. Files of other formats are left as they are.
+     *
+     * @return string[]
+     */
+    public function getEnabledFormats(): array
+    {
+        $value = $this->settings->get('formats');
+        if ($value === null) {
+            return FormatDetector::ALL_FORMATS;
+        }
+
+        return array_values(array_intersect(FormatDetector::ALL_FORMATS, explode(',', (string)$value)));
+    }
+
     public function getCleanerService(): MetadataCleanerService
     {
         return new MetadataCleanerService(
@@ -80,6 +97,7 @@ class Module extends \humhub\components\Module
                 collectPayloads: $this->getLogMode() !== self::LOG_OFF,
             ),
             $this->getTiffPolicy() === self::TIFF_IMAGEMAGICK,
+            $this->getEnabledFormats(),
         );
     }
 
