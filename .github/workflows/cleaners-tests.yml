@@ -1,0 +1,32 @@
+name: Cleaner tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  cleaners:
+    name: Cleaners (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: gd, zlib, dom, mbstring
+          tools: composer
+
+      - name: Install exiftool, ffmpeg and ImageMagick (tests only)
+        run: sudo apt-get update && sudo apt-get install -y libimage-exiftool-perl ffmpeg imagemagick
+
+      - name: Install Codeception
+        run: composer global require --no-interaction codeception/codeception:^5.1 codeception/module-asserts
+
+      - name: Run cleaner tests
+        working-directory: tests
+        run: $(composer global config bin-dir --absolute --quiet)/codecept run cleaners -c codeception.cleaners.yml
