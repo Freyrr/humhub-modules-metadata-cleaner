@@ -17,18 +17,27 @@ use humhub\modules\user\models\User;
  * @property int|null $file_id
  * @property string|null $file_guid
  * @property string|null $file_name
- * @property string $format
+ * @property string $status one of the STATUS_* constants
+ * @property string|null $error why cleaning failed
+ * @property string|null $format
  * @property string $source
  * @property string|null $fields JSON list of field names
  * @property string|null $field_values JSON map of field name => value
  * @property int|null $created_by
- * @property string $created_at
+ * @property string $created_at upload date
  *
  * @property-read File|null $file
  * @property-read User|null $createdBy
  */
 class MetadataLog extends ActiveRecord
 {
+    /** Metadata removed. */
+    public const STATUS_CLEANED = 'cleaned';
+    /** Cleaning failed, the file was passed to HumHub unchanged. */
+    public const STATUS_PASSED = 'passed';
+    /** Cleaning failed, the file was rejected. */
+    public const STATUS_REJECTED = 'rejected';
+
     /**
      * @inheritdoc
      */

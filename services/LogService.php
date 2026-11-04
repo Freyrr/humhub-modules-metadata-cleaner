@@ -41,23 +41,71 @@ class LogService
         try {
             $fields = (new FieldExtractor())->extract($result->removed);
 
-            $log = new MetadataLog();
-            $log->file_id = $file->id;
-            $log->file_guid = $file->guid;
-            $log->file_name = mb_substr((string)$file->file_name, 0, 255);
-            $log->format = (string)$result->format;
-            $log->source = $source;
+            $log = $this->newRow($file, (string)$file->file_name, $source);
+            $log->status = MetadataLog::STATUS_CLEANED;
+            $log->format = $result->format;
             $log->fields = json_encode(array_keys($fields), JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
             $log->field_values = $mode === Module::LOG_FIELDS_AND_VALUES
                 ? json_encode($fields, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE)
                 : null;
-            $log->created_by = $file->created_by ?: (Yii::$app->has('user') && !Yii::$app->user->isGuest ? Yii::$app->user->id : null);
-            $log->created_at = date('Y-m-d H:i:s');
-            if (!$log->save(false)) {
-                Yii::warning('Could not save metadata log row.', 'metadata-cleaner');
-            }
+            $this->save($log);
         } catch (Throwable $e) {
             Yii::error($e, 'metadata-cleaner');
+        }
+    }
+
+    /**
+     * Writes a log row for a file that could not be cleaned, whether it had
+     * metadata or not, unless the log is switched off.
+     *
+     * @param File|null $file null when the upload was rejected before a record existed
+     * @param string $status MetadataLog::STATUS_PASSED or MetadataLog::STATUS_REJECTED
+     */
+    public function recordFailure(?File $file, string $fileName, ?string $format, Throwable $error, string $status, string $source): void
+    {
+        if ($this->module->getLogMode() === Module::LOG_OFF) {
+            return;
+        }
+
+        try {
+            $log = $this->newRow($file, $fileName, $source);
+            $log->status = $status;
+            $log->format = $format;
+            $log->error = mb_substr($error->getMessage() ?: get_class($error), 0, 255);
+            $this->save($log);
+        } catch (Throwable $e) {
+            Yii::error($e, 'metadata-cleaner');
+        }
+    }
+
+    private function newRow(?File $file, string $fileName, string $source): MetadataLog
+    {
+        $log = new MetadataLog();
+        $log->file_id = $file?->id;
+        $log->file_guid = $file?->guid;
+        $log->file_name = mb_substr($fileName, 0, 255);
+        $log->source = $source;
+        $log->created_by = $file?->created_by ?: $this->currentUserId();
+        $log->created_at = date('Y-m-d H:i:s');
+
+        return $log;
+    }
+
+    private function save(MetadataLog $log): void
+    {
+        if (!$log->save(false)) {
+            Yii::warning('Could not save metadata log row.', 'metadata-cleaner');
+        }
+    }
+
+    private function currentUserId(): ?int
+    {
+        try {
+            $user = Yii::$app->get('user', false);
+
+            return $user !== null && !$user->isGuest ? (int)$user->id : null;
+        } catch (Throwable) {
+            return null;
         }
     }
 

@@ -10,6 +10,8 @@ use humhub\modules\file\models\File;
 use humhub\modules\file\models\FileUpload;
 use humhub\modules\metadataCleaner\cleaners\CleanerException;
 use humhub\modules\metadataCleaner\cleaners\CleanResult;
+use humhub\modules\metadataCleaner\cleaners\FormatDetector;
+use humhub\modules\metadataCleaner\models\MetadataLog;
 use humhub\modules\metadataCleaner\services\LogService;
 use Throwable;
 use Yii;
@@ -42,6 +44,14 @@ class Events
      */
     private static array $cleanedUploads = [];
 
+    /**
+     * Uploads that could not be cleaned and were passed on unchanged, by SHA1
+     * of their content, waiting for the stored-file event to log them.
+     *
+     * @var array<string, array{0: Throwable, 1: string|null}>
+     */
+    private static array $failedUploads = [];
+
     public static function onFileUploadAfterValidate(Event $event): void
     {
         $file = $event->sender;
@@ -71,8 +81,16 @@ class Events
             self::$cleanedUploads[(string)sha1_file($path)] = $result;
         } catch (Throwable $e) {
             self::logFailure($file->file_name, $e, $module);
-            if ($module->getOnError() === Module::ON_ERROR_REJECT) {
-                $file->addError('uploadedFile', self::rejectMessage((string)$file->file_name));
+            try {
+                $format = self::detectFormat($file->uploadedFile->tempName);
+                if ($module->getOnError() === Module::ON_ERROR_REJECT) {
+                    $file->addError('uploadedFile', self::rejectMessage((string)$file->file_name));
+                    (new LogService($module))->recordFailure(null, (string)$file->file_name, $format, $e, MetadataLog::STATUS_REJECTED, LogService::SOURCE_UPLOAD);
+                } else {
+                    self::$failedUploads[(string)sha1_file($file->uploadedFile->tempName)] = [$e, $format];
+                }
+            } catch (Throwable $logError) {
+                Yii::error($logError, 'metadata-cleaner');
             }
         }
     }
@@ -100,12 +118,27 @@ class Events
             (new LogService($module))->record($file, $result, LogService::SOURCE_UPLOAD);
             return;
         }
+        if (isset(self::$failedUploads[$hash])) {
+            [$error, $format] = self::$failedUploads[$hash];
+            unset(self::$failedUploads[$hash]);
+            (new LogService($module))->recordFailure($file, (string)$file->file_name, $format, $error, MetadataLog::STATUS_PASSED, LogService::SOURCE_UPLOAD);
+            return;
+        }
 
         try {
             $result = self::cleanStoredFile($file, $module);
         } catch (Throwable $e) {
             self::logFailure($file->file_name, $e, $module);
-            if ($module->getOnError() === Module::ON_ERROR_REJECT) {
+            $reject = $module->getOnError() === Module::ON_ERROR_REJECT;
+            (new LogService($module))->recordFailure(
+                $file,
+                (string)$file->file_name,
+                null,
+                $e,
+                $reject ? MetadataLog::STATUS_REJECTED : MetadataLog::STATUS_PASSED,
+                LogService::SOURCE_STORED,
+            );
+            if ($reject) {
                 $name = (string)$file->file_name;
                 try {
                     $file->delete();
@@ -168,6 +201,15 @@ class Events
             (new LogService($module))->purgeExpired();
         } catch (Throwable $e) {
             Yii::error($e, 'metadata-cleaner');
+        }
+    }
+
+    private static function detectFormat(string $path): ?string
+    {
+        try {
+            return FormatDetector::detect($path);
+        } catch (Throwable) {
+            return null;
         }
     }
 
