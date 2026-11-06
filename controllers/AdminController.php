@@ -40,6 +40,7 @@ class AdminController extends Controller
     {
         $form = new ConfigureForm($this->module);
         if ($form->load(Yii::$app->request->post()) && $form->save()) {
+            (new CleanupService($this->module))->onSettingsSaved();
             $this->view->saved();
             return $this->redirect(['index']);
         }
@@ -79,7 +80,8 @@ class AdminController extends Controller
     }
 
     /**
-     * Continues a stopped or stalled cleanup from the last file processed.
+     * Continues a paused or stalled cleanup from the last file processed,
+     * or from the first file when the selected formats changed.
      */
     public function actionCleanupResume()
     {

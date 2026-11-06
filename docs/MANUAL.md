@@ -55,10 +55,11 @@ The *Statistics* panel at the bottom of the configuration page shows monthly cou
 
 New uploads are cleaned automatically. Files stored before (for example before the module was enabled, or before a format was ticked) are cleaned from the *Clean existing files* panel of the configuration page:
 
-- **Formats:** only the formats ticked in the settings, as saved when the cleanup starts, are cleaned. Files of other formats are not changed and are counted as *skipped*. For example, with *Office / OpenDocument* unticked, Office files are left as they are.
+- **Formats:** only the formats ticked in the settings, as saved, are cleaned. Files of other formats are not changed and are counted as *skipped*. For example, with *Office / OpenDocument* unticked, Office files are left as they are.
 - **Background batches:** the cleanup runs as HumHub queue jobs. Each job cleans up to 100 files or works for about 20 seconds, saves the last file processed and queues the next batch, so no web request or job runs for long. The HumHub cron jobs (queue) must be configured.
 - **No blocking on errors:** a file that cannot be cleaned is kept unchanged (whatever the *When a file cannot be cleaned* setting: stored files are never deleted), counted as an error and logged; the cleanup goes on with the next file.
-- **Stop and resume:** *Stop* ends the cleanup after the current file. *Resume* continues from the last file processed. A cleanup without progress for 10 minutes is shown as stalled (queue not running, job killed), with a *Resume* button.
+- **One button:** *Start* becomes *Pause* while the cleanup runs; *Pause* stops it after the current file and the button becomes *Resume*, which continues from the last file processed. A cleanup without progress for 10 minutes is shown as stalled (queue not running, job killed), with a *Resume* button.
+- **Changing the formats restarts:** when the selected formats are saved with a different selection, a running cleanup restarts from the first file with the new formats; a paused one shows *Start* instead of *Resume* and restarts from the first file.
 - **Report:** while it runs, the panel refreshes every 5 seconds and shows the progress bar, files processed out of the total, and the counters *Metadata removed*, *Already without metadata*, *Skipped*, *Errors* and space saved, with the last error. Below, *Last completed cleanup* shows the dates, the formats, the same counters and whether all files were processed without errors.
 - The cleanup covers the files stored when it starts; files uploaded meanwhile are cleaned on upload. Cleaned files are logged with source `bulk` and counted in the statistics.
 

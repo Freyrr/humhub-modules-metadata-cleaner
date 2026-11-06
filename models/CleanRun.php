@@ -115,6 +115,20 @@ class CleanRun extends ActiveRecord
         return $this->formats === null || $this->formats === '' ? [] : explode(',', $this->formats);
     }
 
+    /**
+     * True when the run cleans exactly these formats.
+     *
+     * @param string[] $formats
+     */
+    public function hasFormats(array $formats): bool
+    {
+        $own = $this->getFormatList();
+        sort($own);
+        sort($formats);
+
+        return $own === array_values($formats);
+    }
+
     public static function newToken(): string
     {
         return Yii::$app->security->generateRandomString(32);
@@ -124,7 +138,7 @@ class CleanRun extends ActiveRecord
     {
         return [
             self::STATUS_RUNNING => Yii::t('MetadataCleanerModule.base', 'Running'),
-            self::STATUS_STOPPED => Yii::t('MetadataCleanerModule.base', 'Stopped'),
+            self::STATUS_STOPPED => Yii::t('MetadataCleanerModule.base', 'Paused'),
             self::STATUS_COMPLETED => Yii::t('MetadataCleanerModule.base', 'Completed'),
             self::STATUS_CANCELLED => Yii::t('MetadataCleanerModule.base', 'Cancelled'),
         ];

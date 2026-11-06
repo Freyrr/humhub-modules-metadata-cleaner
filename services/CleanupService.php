@@ -40,17 +40,18 @@ class CleanupService
     }
 
     /**
-     * Starts a cleanup of all files stored so far, with the formats selected
-     * in the settings. Returns the running cleanup if one exists already.
+     * Starts a cleanup of all files stored so far, from the first file, with
+     * the formats selected in the settings. Returns the running cleanup if
+     * one exists already, unless $restart is true.
      */
-    public function start(): CleanRun
+    public function start(bool $restart = false): CleanRun
     {
         $current = CleanRun::findCurrent();
-        if ($current !== null && $current->isRunning()) {
+        if ($current !== null && $current->isRunning() && !$restart) {
             return $current;
         }
         if ($current !== null) {
-            // A stopped cleanup is replaced by the new one.
+            // The paused (or restarted) cleanup is replaced by the new one.
             $current->updateAttributes(['status' => CleanRun::STATUS_CANCELLED, 'finished_at' => date('Y-m-d H:i:s')]);
         }
 
@@ -84,11 +85,17 @@ class CleanupService
     }
 
     /**
-     * Continues a stopped or stalled cleanup from the last file processed.
+     * Continues a paused or stalled cleanup from the last file processed.
+     * When the selected formats changed since it started, a new cleanup
+     * starts from the first file instead.
      */
     public function resume(CleanRun $run): void
     {
         if ($run->status !== CleanRun::STATUS_RUNNING && $run->status !== CleanRun::STATUS_STOPPED) {
+            return;
+        }
+        if (!$run->hasFormats($this->module->getEnabledFormats())) {
+            $this->start(true);
             return;
         }
         $run->updateAttributes([
@@ -97,6 +104,19 @@ class CleanupService
             'updated_at' => date('Y-m-d H:i:s'),
         ]);
         $this->queue($run);
+    }
+
+    /**
+     * Called after the settings are saved: when the selected formats changed,
+     * a running cleanup restarts from the first file with the new formats.
+     * A paused one restarts from the first file when it is resumed.
+     */
+    public function onSettingsSaved(): void
+    {
+        $run = CleanRun::findCurrent();
+        if ($run !== null && $run->isRunning() && !$run->hasFormats($this->module->getEnabledFormats())) {
+            $this->start(true);
+        }
     }
 
     /**

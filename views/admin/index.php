@@ -101,10 +101,10 @@ JS, json_encode(Url::to(['cleanup-status']))));
     <div class="collapse<?= $cleanupOpen ? ' show' : '' ?>" id="metadata-cleaner-cleanup-body">
         <div class="panel-body">
             <p class="text-body-secondary">
-                <?= Yii::t('MetadataCleanerModule.base', 'New uploads are cleaned automatically. This removes the metadata from the files stored before, for example before the module was enabled. It runs in the background in batches through the HumHub queue (the cron jobs must be configured): you can leave this page, stop and resume it. A file that cannot be cleaned is kept unchanged and counted as an error, and the cleanup goes on.') ?>
+                <?= Yii::t('MetadataCleanerModule.base', 'New uploads are cleaned automatically. This removes the metadata from the files stored before, for example before the module was enabled. It runs in the background in batches through the HumHub queue (the cron jobs must be configured): you can leave this page, pause and resume it. A file that cannot be cleaned is kept unchanged and counted as an error, and the cleanup goes on.') ?>
             </p>
             <div class="alert alert-info">
-                <?= Yii::t('MetadataCleanerModule.base', '<strong>Only the formats selected in the settings above are cleaned</strong> (as saved: save the settings before starting). Files of the other formats are not changed and are counted as skipped: for example, if Office / OpenDocument is not selected, Office files are not cleaned.') ?>
+                <?= Yii::t('MetadataCleanerModule.base', '<strong>Only the formats selected in the settings above are cleaned</strong> (as saved: save the settings before starting). Files of the other formats are not changed and are counted as skipped: for example, if Office / OpenDocument is not selected, Office files are not cleaned. If you change the selected formats, the cleanup restarts from the first file.') ?>
             </div>
             <?= $this->render('_cleanup-status', $cleanup) ?>
         </div>

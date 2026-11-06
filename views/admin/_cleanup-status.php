@@ -93,20 +93,22 @@ $post = static function (string $label, string $action, bool $primary, ?string $
         <?php if ($current->last_error !== null) : ?>
             <p class="text-danger small"><?= $t('Last error: {error}', ['error' => Html::encode($current->last_error)]) ?></p>
         <?php endif; ?>
+        <?php $formatsChanged = !$current->hasFormats($formats); ?>
+        <?php if ($formatsChanged) : ?>
+            <p class="text-warning"><?= $t('The selected formats have changed since this cleanup started: it will restart from the first file.') ?></p>
+        <?php endif; ?>
         <p>
-            <?php if ($current->isRunning()) : ?>
-                <?= $post($t('Stop'), 'cleanup-stop', false) ?>
-            <?php endif; ?>
-            <?php if (!$current->isRunning() || $current->isStalled()) : ?>
+            <?php if ($current->isRunning() && !$current->isStalled()) : ?>
+                <?= $post($t('Pause'), 'cleanup-stop', false) ?>
+            <?php elseif ($formatsChanged) : ?>
+                <?= $post($t('Start'), 'cleanup-start', true, $t('Start a new cleanup of all stored files with the formats selected above?')) ?>
+            <?php else : ?>
                 <?= $post($t('Resume'), 'cleanup-resume', true) ?>
-            <?php endif; ?>
-            <?php if (!$current->isRunning()) : ?>
-                <?= $post($t('Start again from the first file'), 'cleanup-start', false, $t('Start a new cleanup of all stored files with the formats selected above?')) ?>
             <?php endif; ?>
         </p>
     <?php else : ?>
         <p>
-            <?= $post($t('Clean existing files'), 'cleanup-start', true, $t('Start a new cleanup of all stored files with the formats selected above?')) ?>
+            <?= $post($t('Start'), 'cleanup-start', true, $t('Start a new cleanup of all stored files with the formats selected above?')) ?>
         </p>
     <?php endif; ?>
 
