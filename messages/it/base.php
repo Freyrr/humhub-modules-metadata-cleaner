@@ -82,4 +82,7 @@ return [
     'Pause' => 'Pausa',
     'Paused' => 'In pausa',
     'The selected formats have changed since this cleanup started: it will restart from the first file.' => 'I formati selezionati sono cambiati da quando è partita questa bonifica: ripartirà dal primo file.',
+    'The selected formats have changed since the last cleanup: existing files of the newly selected formats may still contain metadata. Start a new cleanup to bring them in line.' => 'I formati selezionati sono cambiati dall\'ultima bonifica: i file esistenti dei formati aggiunti possono contenere ancora metadati. Avvia una nuova bonifica per metterli in linea.',
+    '<strong>Up to date.</strong> All {total} files stored until {date} have been processed with the selected formats. Files uploaded since then are cleaned automatically on upload.' => '<strong>Tutto in linea.</strong> Tutti i {total} file salvati fino al {date} sono stati elaborati con i formati selezionati. I file caricati da quel momento vengono puliti automaticamente al caricamento.',
+    '<strong>Completed with errors.</strong> All {total} files stored until {date} have been processed with the selected formats, but {count} could not be cleaned and were kept unchanged. Files uploaded since then are cleaned automatically on upload.' => '<strong>Completata con errori.</strong> Tutti i {total} file salvati fino al {date} sono stati elaborati con i formati selezionati, ma {count} non si sono potuti pulire e sono stati lasciati invariati. I file caricati da quel momento vengono puliti automaticamente al caricamento.',
 ];

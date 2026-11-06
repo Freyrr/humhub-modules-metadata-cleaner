@@ -69,7 +69,9 @@ $formatSize = static function ($before, $after) {
 </div>
 
 <?php
-$cleanupOpen = $cleanup['current'] !== null;
+// Open while a cleanup exists, or when the formats changed since the last one.
+$cleanupOpen = $cleanup['current'] !== null
+    || ($cleanup['lastCompleted'] !== null && !$cleanup['lastCompleted']->hasFormats($cleanup['formats']));
 $this->registerJs(sprintf(<<<'JS'
 (function () {
     var url = %s;

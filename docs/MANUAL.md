@@ -61,6 +61,7 @@ New uploads are cleaned automatically. Files stored before (for example before t
 - **One button:** *Start* becomes *Pause* while the cleanup runs; *Pause* stops it after the current file and the button becomes *Resume*, which continues from the last file processed. A cleanup without progress for 10 minutes is shown as stalled (queue not running, job killed), with a *Resume* button.
 - **Changing the formats restarts:** when the selected formats are saved with a different selection, a running cleanup restarts from the first file with the new formats; a paused one shows *Start* instead of *Resume* and restarts from the first file.
 - **Report:** while it runs, the panel refreshes every 5 seconds and shows the progress bar, files processed out of the total, and the counters *Metadata removed*, *Already without metadata*, *Skipped*, *Errors* and space saved, with the last error. Below, *Last completed cleanup* shows the dates, the formats, the same counters and whether all files were processed without errors.
+- **When it is finished:** a green *Up to date* box says that all the files stored until the start of the cleanup were processed with the selected formats, and that files uploaded since then are cleaned on upload. With errors the box is yellow and gives their number. If the selected formats change afterwards, a warning asks to start a new cleanup.
 - The cleanup covers the files stored when it starts; files uploaded meanwhile are cleaned on upload. Cleaned files are logged with source `bulk` and counted in the statistics.
 
 ## Console command

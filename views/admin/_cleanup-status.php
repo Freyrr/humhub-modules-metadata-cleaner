@@ -58,6 +58,29 @@ $post = static function (string $label, string $action, bool $primary, ?string $
 };
 ?>
 <div id="metadata-cleaner-cleanup-status" data-running="<?= $current !== null && $current->isRunning() ? '1' : '0' ?>">
+    <?php if ($current === null && $lastCompleted !== null) : ?>
+        <?php
+        $params = [
+            'total' => Yii::$app->formatter->asInteger($lastCompleted->processed),
+            'date' => Yii::$app->formatter->asDatetime($lastCompleted->started_at, 'short'),
+            'count' => $lastCompleted->failed,
+        ];
+        ?>
+        <?php if (!$lastCompleted->hasFormats($formats)) : ?>
+            <div class="alert alert-warning">
+                <?= $t('The selected formats have changed since the last cleanup: existing files of the newly selected formats may still contain metadata. Start a new cleanup to bring them in line.') ?>
+            </div>
+        <?php elseif ($lastCompleted->failed === 0) : ?>
+            <div class="alert alert-success">
+                <i class="fa fa-check-circle"></i>
+                <?= $t('<strong>Up to date.</strong> All {total} files stored until {date} have been processed with the selected formats. Files uploaded since then are cleaned automatically on upload.', $params) ?>
+            </div>
+        <?php else : ?>
+            <div class="alert alert-warning">
+                <?= $t('<strong>Completed with errors.</strong> All {total} files stored until {date} have been processed with the selected formats, but {count} could not be cleaned and were kept unchanged. Files uploaded since then are cleaned automatically on upload.', $params) ?>
+            </div>
+        <?php endif; ?>
+    <?php endif; ?>
     <?php if ($current !== null) : ?>
         <h4>
             <?= $t('Current cleanup') ?>

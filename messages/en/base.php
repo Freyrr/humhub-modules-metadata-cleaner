@@ -82,4 +82,7 @@ return [
     'Pause' => '',
     'Paused' => '',
     'The selected formats have changed since this cleanup started: it will restart from the first file.' => '',
+    'The selected formats have changed since the last cleanup: existing files of the newly selected formats may still contain metadata. Start a new cleanup to bring them in line.' => '',
+    '<strong>Up to date.</strong> All {total} files stored until {date} have been processed with the selected formats. Files uploaded since then are cleaned automatically on upload.' => '',
+    '<strong>Completed with errors.</strong> All {total} files stored until {date} have been processed with the selected formats, but {count} could not be cleaned and were kept unchanged. Files uploaded since then are cleaned automatically on upload.' => '',
 ];

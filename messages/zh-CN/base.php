@@ -82,4 +82,7 @@ return [
     'Pause' => '暂停',
     'Paused' => '已暂停',
     'The selected formats have changed since this cleanup started: it will restart from the first file.' => '自本次清理开始以来，所选格式已更改：将从第一个文件重新开始。',
+    'The selected formats have changed since the last cleanup: existing files of the newly selected formats may still contain metadata. Start a new cleanup to bring them in line.' => '自上次清理以来所选格式已更改：新选格式的现有文件可能仍包含元数据。请开始新的清理以使其保持一致。',
+    '<strong>Up to date.</strong> All {total} files stored until {date} have been processed with the selected formats. Files uploaded since then are cleaned automatically on upload.' => '<strong>已是最新。</strong>截至 {date} 存储的全部 {total} 个文件均已按所选格式处理。此后上传的文件会在上传时自动清理。',
+    '<strong>Completed with errors.</strong> All {total} files stored until {date} have been processed with the selected formats, but {count} could not be cleaned and were kept unchanged. Files uploaded since then are cleaned automatically on upload.' => '<strong>已完成，但有错误。</strong>截至 {date} 存储的全部 {total} 个文件均已按所选格式处理，但有 {count} 个无法清理并保持不变。此后上传的文件会在上传时自动清理。',
 ];
