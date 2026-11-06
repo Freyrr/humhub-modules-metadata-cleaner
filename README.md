@@ -71,4 +71,7 @@ tools for full test coverage: exiftool, ffmpeg, ImageMagick, Poppler.
 CI runs the suite on PHP 8.2–8.4 (`.github/workflows/`).
 
 A Docker-based HumHub instance for integration testing is provided in
-`tests/docker-compose.yml`.
+`tests/docker-compose.yml`. `tests/docker/setup.sh` installs it without the
+web installer and adds Legal Tools (first-login legal pages) and an extra
+first-login tour slide, to test the module together with them; see the
+comments in the compose file.

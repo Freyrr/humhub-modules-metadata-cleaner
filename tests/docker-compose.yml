@@ -2,12 +2,20 @@
 # to test the HumHub-bound code (Events, LogService, claimUpload, admin page).
 #
 # Usage:
-#   docker compose -f tests/docker-compose.yml up -d
-#   # open http://localhost:8080 and finish the HumHub installer
-#   # (database host: db, name/user/password: humhub)
-#   # then enable the module: Administration -> Modules -> Metadata Cleaner
+#   docker compose -f tests/docker-compose.yml up -d --build
+#   docker compose -f tests/docker-compose.yml exec humhub bash /opt/dev/setup.sh
+#   # open http://localhost:8080 and log in as admin / Admin1234!
 #
-# Uses the official HumHub image. The module directory is mounted read-only
+# setup.sh installs HumHub (no web installer needed), enables this module and
+# Legal Tools, and configures Legal Tools with the texts of the EISocialHub
+# guide docs/12-testi-legali-e-banner.md. The EISocialHub repository is
+# expected next to this one (C:\scr\eisocialhub); set EISOCIALHUB_DIR to use
+# another path. Its texts are read at setup time, never copied here.
+#
+# The first-login tour has one more slide (tests/docker/tour/tour-interface.php).
+#
+# The image is the official HumHub image plus Legal Tools
+# (tests/docker/humhub/Dockerfile). The module directory is mounted read-only
 # in /data/modules-custom, which the image loads modules from.
 services:
   db:
@@ -22,14 +30,25 @@ services:
       - db-data:/var/lib/mysql
 
   humhub:
-    image: humhub/humhub:1.19
+    build: ./docker/humhub
+    image: metadata-cleaner-dev-humhub:1.19
     depends_on: [db]
     environment:
       # Plain HTTP on port 80 (no automatic HTTPS) for local testing.
       SERVER_NAME: ":80"
+      HUMHUB_CONFIG__COMPONENTS__DB__DSN: "mysql:host=db;dbname=humhub"
+      HUMHUB_CONFIG__COMPONENTS__DB__USERNAME: humhub
+      HUMHUB_CONFIG__COMPONENTS__DB__PASSWORD: humhub
+      # First-login tour: the "Overview" tour is replaced by a copy with one
+      # more slide; the other three tours are the core ones.
+      HUMHUB_CONFIG__MODULES__TOUR__TOUR_CONFIG_FILES: >-
+        ["/opt/dev/tour/tour-interface.php", "@tour/config/tour-spaces.php",
+        "@tour/config/tour-profile.php", "@tour/config/tour-administration.php"]
     volumes:
       - humhub-data:/data
       - ../:/data/modules-custom/metadata-cleaner:ro
+      - ./docker:/opt/dev:ro
+      - ${EISOCIALHUB_DIR:-../../eisocialhub}:/eisocialhub:ro
     ports: ["8080:80"]
 
   # ClamAV daemon for the HumHub "Antivirus" marketplace module.
