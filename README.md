@@ -23,8 +23,9 @@ configuration.
 
 ## Features
 
-- Cleaning runs on upload and on already-stored files (bulk cleanup via
-  console command)
+- Cleaning runs on upload and on already-stored files (background cleanup
+  started from the configuration page, with progress, stop/resume and a
+  report; also available as a console command)
 - Optional audit log of removed fields with configurable retention
 - Optional preservation of the EXIF orientation tag
 - Works with any HumHub storage driver (local, S3, ...)
@@ -57,7 +58,9 @@ this directory to `protected/modules/metadata-cleaner` (or a custom module
 path) and enable it.
 
 Database migrations run automatically on module enable. To clean existing
-files: `php yii metadata-cleaner/clean`
+files, open the module configuration page and use *Clean existing files*
+(it runs through the HumHub queue, so the cron jobs must be configured), or
+run `php yii metadata-cleaner/clean` from the console.
 
 ## Development
 

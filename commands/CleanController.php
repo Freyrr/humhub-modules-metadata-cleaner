@@ -7,14 +7,12 @@
 namespace humhub\modules\metadataCleaner\commands;
 
 use humhub\modules\file\models\File;
-use humhub\modules\file\models\FileHistory;
-use humhub\modules\metadataCleaner\cleaners\CleanResult;
 use humhub\modules\metadataCleaner\Events;
-use humhub\modules\metadataCleaner\models\MetadataLog;
 use humhub\modules\metadataCleaner\models\MetadataStats;
 use humhub\modules\metadataCleaner\Module;
 use humhub\modules\metadataCleaner\services\LogService;
 use humhub\modules\metadataCleaner\services\MetadataCleanerService;
+use humhub\modules\metadataCleaner\services\StoredFileCleaner;
 use Throwable;
 use Yii;
 use yii\base\InlineAction;
@@ -28,10 +26,11 @@ use yii\helpers\Console;
  * Usage:
  *   php yii metadata-cleaner/purge-log
  *
- * The bulk cleaning of all stored files (`metadata-cleaner/clean`) is
- * intentionally not documented and not listed by `php yii help`: it reads
- * every file and can take a long time and many resources. It is run by
- * {@see runClean()} through {@see createAction()}.
+ * The bulk cleaning of all stored files (`metadata-cleaner/clean`) is not
+ * listed by `php yii help`: the admin page starts it as queue jobs, with
+ * progress and resume ({@see \humhub\modules\metadataCleaner\services\CleanupService}).
+ * The console action is kept for operators who prefer the command line. It is
+ * run by {@see runClean()} through {@see createAction()}.
  */
 class CleanController extends Controller
 {
@@ -76,7 +75,7 @@ class CleanController extends Controller
     {
         $module = $this->getModule();
         $service = $module->getCleanerService();
-        $log = new LogService($module);
+        $cleaner = new StoredFileCleaner($module, null, LogService::SOURCE_CONSOLE);
         $counts = ['cleaned' => 0, 'unchanged' => 0, 'skipped' => 0, 'failed' => 0];
         $lastId = max(0, $this->fromId);
 
@@ -84,42 +83,22 @@ class CleanController extends Controller
             $files = File::find()->where(['>', 'id', $lastId])->orderBy(['id' => SORT_ASC])->limit(max(1, $this->batch))->all();
             foreach ($files as $file) {
                 $lastId = $file->id;
-                try {
-                    if (!$file->getStore()->has()) {
-                        $counts['skipped']++;
-                        continue;
-                    }
-                    if ($this->dryRun) {
-                        $result = $this->dryRunFile($file, $service);
-                    } else {
-                        $sizeBefore = $file->size !== null ? (int)$file->size : null;
-                        $result = Events::cleanStoredFile($file, $module);
-                        if ($result->changed) {
-                            // Previews were made from the old content.
-                            $file->getStore()->delete(null, ['file', FileHistory::VARIANT_PREFIX . '*']);
-                        }
-                        $log->record($file, $result, LogService::SOURCE_CONSOLE, $sizeBefore);
-                    }
-                    if ($result->format === null) {
-                        $counts['skipped']++;
-                    } elseif ($result->changed || ($this->dryRun && $result->hadMetadata())) {
-                        $counts['cleaned']++;
-                        $this->stdout(sprintf("%s #%d %s\n", $this->dryRun ? 'would clean' : 'cleaned', $file->id, $file->file_name));
-                    } else {
-                        $counts['unchanged']++;
-                    }
-                } catch (Throwable $e) {
-                    $counts['failed']++;
-                    $this->stderr(sprintf("failed #%d %s: %s\n", $file->id, $file->file_name, $e->getMessage()), Console::FG_RED);
-                    if (!$this->dryRun) {
-                        $log->recordFailure($file, (string)$file->file_name, null, $e, MetadataLog::STATUS_PASSED, LogService::SOURCE_CONSOLE);
-                    }
+                if ($this->dryRun) {
+                    $outcome = $this->dryRunFile($file, $service);
+                } else {
+                    $outcome = $cleaner->clean($file);
+                }
+                $counts[$outcome]++;
+                if ($outcome === StoredFileCleaner::OUTCOME_CLEANED) {
+                    $this->stdout(sprintf("%s #%d %s\n", $this->dryRun ? 'would clean' : 'cleaned', $file->id, $file->file_name));
+                } elseif ($outcome === StoredFileCleaner::OUTCOME_FAILED) {
+                    $this->stderr(sprintf("failed %s\n", $cleaner->lastError ?? ('#' . $file->id)), Console::FG_RED);
                 }
             }
         } while (count($files) > 0);
 
         $this->stdout(sprintf(
-            "\n%s: %d, unchanged: %d, not images or videos: %d, failed: %d. Last file id: %d\n",
+            "\n%s: %d, unchanged: %d, skipped (format not cleaned or content missing): %d, failed: %d. Last file id: %d\n",
             $this->dryRun ? 'Would clean' : 'Cleaned',
             $counts['cleaned'],
             $counts['unchanged'],
@@ -153,17 +132,31 @@ class CleanController extends Controller
         return ExitCode::OK;
     }
 
-    private function dryRunFile(File $file, MetadataCleanerService $service): CleanResult
+    private function dryRunFile(File $file, MetadataCleanerService $service): string
     {
-        $tmp = Events::copyToTemp($file, $this->getModule());
-        if ($tmp === null) {
-            return CleanResult::notHandled();
-        }
         try {
-            return $service->cleanPath($tmp);
-        } finally {
-            @unlink($tmp);
+            if (!$file->getStore()->has()) {
+                return StoredFileCleaner::OUTCOME_SKIPPED;
+            }
+            $tmp = Events::copyToTemp($file, $this->getModule());
+            if ($tmp === null) {
+                return StoredFileCleaner::OUTCOME_SKIPPED;
+            }
+            try {
+                $result = $service->cleanPath($tmp);
+            } finally {
+                @unlink($tmp);
+            }
+        } catch (Throwable $e) {
+            $this->stderr(sprintf("failed #%d %s: %s\n", $file->id, $file->file_name, $e->getMessage()), Console::FG_RED);
+
+            return StoredFileCleaner::OUTCOME_FAILED;
         }
+        if ($result->format === null) {
+            return StoredFileCleaner::OUTCOME_SKIPPED;
+        }
+
+        return $result->hadMetadata() ? StoredFileCleaner::OUTCOME_CLEANED : StoredFileCleaner::OUTCOME_UNCHANGED;
     }
 
     private function getModule(): Module
