@@ -51,6 +51,17 @@ The *Statistics* panel at the bottom of the configuration page shows monthly cou
 >
 > **Note — Photoshop (PSD/PSB):** detected but not cleaned yet: removing image resources is not yet safe enough for production files, so they are stored unchanged.
 
+## Cleaning existing files
+
+New uploads are cleaned automatically. Files stored before (for example before the module was enabled, or before a format was ticked) are cleaned from the *Clean existing files* panel of the configuration page:
+
+- **Formats:** only the formats ticked in the settings, as saved when the cleanup starts, are cleaned. Files of other formats are not changed and are counted as *skipped*. For example, with *Office / OpenDocument* unticked, Office files are left as they are.
+- **Background batches:** the cleanup runs as HumHub queue jobs. Each job cleans up to 100 files or works for about 20 seconds, saves the last file processed and queues the next batch, so no web request or job runs for long. The HumHub cron jobs (queue) must be configured.
+- **No blocking on errors:** a file that cannot be cleaned is kept unchanged (whatever the *When a file cannot be cleaned* setting: stored files are never deleted), counted as an error and logged; the cleanup goes on with the next file.
+- **Stop and resume:** *Stop* ends the cleanup after the current file. *Resume* continues from the last file processed. A cleanup without progress for 10 minutes is shown as stalled (queue not running, job killed), with a *Resume* button.
+- **Report:** while it runs, the panel refreshes every 5 seconds and shows the progress bar, files processed out of the total, and the counters *Metadata removed*, *Already without metadata*, *Skipped*, *Errors* and space saved, with the last error. Below, *Last completed cleanup* shows the dates, the formats, the same counters and whether all files were processed without errors.
+- The cleanup covers the files stored when it starts; files uploaded meanwhile are cleaned on upload. Cleaned files are logged with source `bulk` and counted in the statistics.
+
 ## Console command
 
 ```
@@ -59,4 +70,6 @@ php yii metadata-cleaner/purge-log
 
 Deletes log entries older than the retention period (this also runs every day with the HumHub cron). `php yii metadata-cleaner/purge-stats` does the same for the statistics buckets.
 
-> **Note — disabling the module:** like every HumHub module, *Disable* wipes the module state: the log and statistics tables are dropped by the uninstall migration and the settings are reset. Re-enabling starts with a clean log and default settings.
+`php yii metadata-cleaner/clean` cleans all stored files in the foreground, as an alternative to the panel (options `--dryRun`/`-n`, `--batch`, `--fromId` to resume). It is not listed by `php yii help`.
+
+> **Note — disabling the module:** like every HumHub module, *Disable* wipes the module state: the log, statistics and cleanup tables are dropped by the uninstall migration and the settings are reset. Re-enabling starts with a clean log and default settings.

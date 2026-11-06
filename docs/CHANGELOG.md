@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.1.0 (unreleased)
+------------------
+- Enh: *Clean existing files* in the module configuration page: removes the metadata from files stored before, as background queue jobs in batches. Shows progress, can be stopped and resumed from the last file processed, and reports the last completed cleanup (removed, already clean, skipped, errors, space saved). A file that cannot be cleaned is kept unchanged and counted as an error, and the cleanup goes on. Only the formats selected in the settings are cleaned.
+
 1.0.0 (November 4, 2026)
 ------------------------
 - Enh: Initial release: cleans metadata (EXIF, XMP, IPTC, GPS, author and device data) from uploaded files without re-encoding.

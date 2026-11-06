@@ -12,6 +12,7 @@ class uninstall extends Migration
     {
         $this->safeDropTable('metadata_cleaner_log');
         $this->safeDropTable('metadata_cleaner_stats');
+        $this->safeDropTable('metadata_cleaner_run');
     }
 
     public function down()

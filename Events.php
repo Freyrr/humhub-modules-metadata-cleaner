@@ -158,16 +158,17 @@ class Events
      * Works on any HumHub storage: the content is copied to a local temporary
      * file, cleaned there, and written back only when it changed.
      *
+     * @param string[]|null $formats formats to clean, null for the configured ones
      * @throws CleanerException
      */
-    public static function cleanStoredFile(File $file, Module $module): CleanResult
+    public static function cleanStoredFile(File $file, Module $module, ?array $formats = null): CleanResult
     {
-        $tmp = self::copyToTemp($file, $module);
+        $tmp = self::copyToTemp($file, $module, $formats);
         if ($tmp === null) {
             return CleanResult::notHandled();
         }
         try {
-            $result = $module->getCleanerService()->cleanPath($tmp);
+            $result = $module->getCleanerService($formats)->cleanPath($tmp);
             if ($result->changed) {
                 $file->getStore()->setByPath($tmp);
                 $file->updateAttributes([
@@ -191,10 +192,11 @@ class Events
      * cannot be read, the whole content is copied and the detection runs on
      * the temporary file as before.
      *
+     * @param string[]|null $formats formats to clean, null for the configured ones
      * @return string|null path of the temporary file, or null when the copy was skipped
      * @throws CleanerException
      */
-    public static function copyToTemp(File $file, Module $module): ?string
+    public static function copyToTemp(File $file, Module $module, ?array $formats = null): ?string
     {
         $in = $file->getStore()->getContentStream();
         if (!is_resource($in)) {
@@ -203,7 +205,7 @@ class Events
         $head = @stream_get_contents($in, 64);
         if (is_string($head)) {
             $format = FormatDetector::detectFromBytes($head);
-            $enabled = $module->getEnabledFormats();
+            $enabled = $formats ?? $module->getEnabledFormats();
             if ($format === FormatDetector::FORMAT_TIFF) {
                 // A TIFF header can also begin a DNG (the raw group) or an
                 // unhandled camera RAW: the full detection reads the tags.

@@ -86,7 +86,10 @@ class Module extends \humhub\components\Module
         return array_values(array_intersect(FormatDetector::ALL_FORMATS, explode(',', (string)$value)));
     }
 
-    public function getCleanerService(): MetadataCleanerService
+    /**
+     * @param string[]|null $formats formats to clean, null for the configured ones
+     */
+    public function getCleanerService(?array $formats = null): MetadataCleanerService
     {
         return new MetadataCleanerService(
             new CleanOptions(
@@ -94,7 +97,7 @@ class Module extends \humhub\components\Module
                 collectPayloads: $this->getLogMode() !== self::LOG_OFF,
                 maxMemoryFileBytes: $this->getMaxMemoryFileBytes(),
             ),
-            $this->getEnabledFormats(),
+            $formats ?? $this->getEnabledFormats(),
         );
     }
 

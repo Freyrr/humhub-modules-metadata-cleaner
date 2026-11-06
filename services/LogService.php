@@ -25,6 +25,8 @@ class LogService
     public const SOURCE_UPLOAD = 'upload';
     public const SOURCE_STORED = 'stored';
     public const SOURCE_CONSOLE = 'console';
+    /** Cleanup of existing files started from the admin page. */
+    public const SOURCE_BULK = 'bulk';
 
     /** Largest JSON stored in the metadata column (TEXT holds 65535 bytes). */
     public const MAX_METADATA_BYTES = 60000;

@@ -13,12 +13,14 @@ use humhub\modules\metadataCleaner\models\MetadataStats;
 use humhub\widgets\form\ActiveForm;
 use humhub\widgets\GridView;
 use yii\data\ActiveDataProvider;
+use yii\helpers\Url;
 
 /* @var $this View */
 /* @var $model ConfigureForm */
 /* @var $searchModel MetadataLogSearch */
 /* @var $dataProvider ActiveDataProvider */
 /* @var $stats array */
+/* @var $cleanup array parameters of _cleanup-status */
 
 $formatSize = static function ($before, $after) {
     if ($before === null && $after === null) {
@@ -63,6 +65,49 @@ $formatSize = static function ($before, $after) {
         <?= $form->field($model, 'onError')->dropDownList(ConfigureForm::onErrorOptions()) ?>
         <?= Html::saveButton() ?>
         <?php ActiveForm::end() ?>
+    </div>
+</div>
+
+<?php
+$cleanupOpen = $cleanup['current'] !== null;
+$this->registerJs(sprintf(<<<'JS'
+(function () {
+    var url = %s;
+    function refresh() {
+        var box = document.getElementById('metadata-cleaner-cleanup-status');
+        if (!box || box.getAttribute('data-running') !== '1') {
+            return;
+        }
+        fetch(url, {credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest'}})
+            .then(function (r) { return r.ok ? r.text() : null; })
+            .then(function (html) {
+                if (html !== null) {
+                    box.outerHTML = html;
+                }
+            })
+            .catch(function () {})
+            .finally(function () { setTimeout(refresh, 5000); });
+    }
+    setTimeout(refresh, 5000);
+})();
+JS, json_encode(Url::to(['cleanup-status']))));
+?>
+<div class="panel panel-default" id="metadata-cleaner-cleanup">
+    <div class="panel-heading">
+        <a class="text-decoration-none<?= $cleanupOpen ? '' : ' collapsed' ?>" data-bs-toggle="collapse" href="#metadata-cleaner-cleanup-body" role="button" aria-expanded="<?= $cleanupOpen ? 'true' : 'false' ?>" aria-controls="metadata-cleaner-cleanup-body">
+            <i class="fa fa-chevron-down"></i> <?= Yii::t('MetadataCleanerModule.base', '<strong>Clean existing files</strong>') ?>
+        </a>
+    </div>
+    <div class="collapse<?= $cleanupOpen ? ' show' : '' ?>" id="metadata-cleaner-cleanup-body">
+        <div class="panel-body">
+            <p class="text-body-secondary">
+                <?= Yii::t('MetadataCleanerModule.base', 'New uploads are cleaned automatically. This removes the metadata from the files stored before, for example before the module was enabled. It runs in the background in batches through the HumHub queue (the cron jobs must be configured): you can leave this page, stop and resume it. A file that cannot be cleaned is kept unchanged and counted as an error, and the cleanup goes on.') ?>
+            </p>
+            <div class="alert alert-info">
+                <?= Yii::t('MetadataCleanerModule.base', '<strong>Only the formats selected in the settings above are cleaned</strong> (as saved: save the settings before starting). Files of the other formats are not changed and are counted as skipped: for example, if Office / OpenDocument is not selected, Office files are not cleaned.') ?>
+            </div>
+            <?= $this->render('_cleanup-status', $cleanup) ?>
+        </div>
     </div>
 </div>
 
