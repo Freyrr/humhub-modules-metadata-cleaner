@@ -1,0 +1,10 @@
+# Stand-alone configuration for the cleaners suite (no HumHub needed).
+namespace: metadataCleaner
+paths:
+    tests: codeception
+    output: codeception/_output
+    data: codeception/_data
+    support: codeception/_support
+settings:
+    colors: true
+    memory_limit: 1024M

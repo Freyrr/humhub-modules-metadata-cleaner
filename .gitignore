@@ -1,0 +1,8 @@
+/vendor/
+tests/codeception/_output/*
+!tests/codeception/_output/.gitignore
+tests/codeception/_support/_generated/
+.idea/
+.DS_Store
+backup-repository.bundle
+/metadata-cleaner.zip

@@ -1,0 +1,74 @@
+# Metadata Cleaner
+
+Removes EXIF, XMP and IPTC metadata — GPS position included — from every image and video uploaded to HumHub, **without re-encoding** the file. Only the metadata blocks of the file are removed: the picture and the audio/video streams stay byte-for-byte identical, so there is no loss of quality.
+
+## Why this module
+
+Photos and videos taken with a phone or a camera carry hidden information that most users do not know about:
+
+- the **exact GPS position** where the picture was taken — often the user's home, school or workplace;
+- date and time, down to the second;
+- make, model and **serial number** of the device, owner and author names;
+- software used, editing history, embedded thumbnails (which may still show a part of the picture that was cropped out).
+
+When such a file is shared in a social network, every member who can download it can read this information. Metadata Cleaner removes it at upload time, before the file is stored, so that it never reaches the platform.
+
+## Privacy laws it helps with
+
+_Last reviewed: November 4, 2026. Laws change: check the current text of the laws that apply to you._
+
+Removing data that is not needed is a basic principle of privacy laws around the world. Location data, in particular, is personal data almost everywhere, and in several jurisdictions it is a sensitive category. This module helps a HumHub operator apply these principles to uploaded files:
+
+**European Union and Europe**
+
+- **GDPR** (EU 2016/679): data minimisation (Art. 5(1)(c)), data protection by design and by default (Art. 25) and security of processing (Art. 32). Location data is explicitly named as personal data (Art. 4(1)).
+- **UK GDPR** and the Data Protection Act 2018, and the Swiss **revised Federal Act on Data Protection (nFADP)**, which follow the same principles.
+
+**United States**
+
+- **CCPA as amended by the CPRA** (California): precise geolocation is "sensitive personal information", and collection must be limited to what is reasonably necessary.
+- **COPPA**: geolocation information and photos of a child under 13 are personal information; removing the GPS position from uploads reduces what is collected from children.
+- State privacy laws such as those of **Virginia (VCDPA)**, **Colorado (CPA)**, **Connecticut (CTDPA)** and others, which treat precise geolocation as sensitive data.
+
+**Rest of the world**
+
+- **Brazil — LGPD**: principle of necessity (Art. 6).
+- **Canada — PIPEDA**: limiting collection (Principle 4.4).
+- **Japan — APPI**, **Australia — Privacy Act 1988** (Australian Privacy Principles 3 and 11), **China — PIPL** (minimum necessary, Art. 6; location tracking is sensitive personal information, Art. 28), **India — DPDP Act 2023**, **South Africa — POPIA**, and other laws based on the same principles.
+
+> **Not legal advice.** This list is for information only. The module removes metadata from uploaded files; it does not by itself make a platform compliant with any law. Compliance depends on how the whole platform is run. Ask a qualified lawyer or your data protection officer about your obligations.
+
+Note that the optional log of the module can itself store personal data (for example a GPS position, if values are logged). By default it stores field names only and deletes entries after 30 days.
+
+## Features
+
+- Cleans **JPEG, PNG/APNG, WebP, GIF, HEIC/HEIF/AVIF, TIFF, DNG raw and SVG** images (including files from Samsung and Xiaomi devices and C2PA content-credential manifests), **MP4/MOV/3GP, WebM/MKV, AVI and WMV** videos, **M4A, MP3, AAC, FLAC, Ogg, Opus, WAV and AIFF** audio files, **JPEG 2000 and JPEG XL** images, and **PDF, Office (DOCX, XLSX, PPTX) and OpenDocument (ODT, ODS, ODP)** documents, including the short videos of motion photos. SVG images are also cleaned of scripts. Each file type can be switched on or off; all are on by default.
+- The file type is detected from the file content, never from its name, so a renamed file is still cleaned.
+- Keeps what is needed to show the file correctly: colour profiles and, optionally, the EXIF Orientation tag (without it some phone photos are shown rotated).
+- Works on every upload path: the web uploader, the REST API, imports and other modules.
+- Robust: every error is caught. By default a file that cannot be cleaned is accepted unchanged and the error is logged; it can be configured to reject the file instead.
+- Optional log (off / field names only / names and values) with the result of each run, the uploading user, file name, type and size, and automatic deletion after a configurable number of days. Visible to system administrators only.
+- Statistics: monthly counters of every processed file per format and outcome (metadata removed, already clean, errors), kept independently of the log with their own configurable retention.
+- Pure PHP: no external program or library is needed at runtime.
+- Available in English, Italian, Spanish, French, German, Portuguese and Simplified Chinese.
+
+## What the module does not cover
+
+The module removes the metadata stored in the file formats listed above. It does not, and cannot, make every upload anonymous. In particular:
+
+- **What the file shows or says.** Faces, number plates, street signs, screen contents, text in a document, voices in a recording: anything that is part of the picture, sound or text itself is not changed.
+- **The file name.** HumHub keeps the name of the uploaded file (for example `IMG_20261104_Milano.jpg` or `CV Mario Rossi.pdf`), which can itself contain personal data.
+- **Content of documents.** In Office and OpenDocument files only the document properties are removed: comments and their authors, tracked changes, hidden text, speaker notes, and the metadata of pictures embedded in the document stay as they are. In PDF files the metadata of embedded images and attached files is not changed.
+- **Other file types.** Camera RAW formats that are not based on TIFF (CR3, RAF, X3F...), legacy Office files (DOC, XLS, PPT), RTF, EPUB, flat OpenDocument XML files, compressed SVG (SVGZ), Photoshop files (PSD, PSB: recognised, but not cleaned yet), JPEG XL files without a container (bare codestream: they hold no metadata), archives (ZIP, RAR, 7z) and their contents are stored unchanged.
+- **Files that cannot be cleaned safely.** Encrypted PDF files, PDF streams with unusual compression, ZIP64 or encrypted Office files, SVG files with entity declarations and damaged files are passed on unchanged (or rejected, depending on the settings), and the error is logged.
+- **Technical data that is kept on purpose,** because the file needs it: the EXIF orientation tag (optional), colour profiles, the camera model name that DNG files require (`UniqueCameraModel`), the encoder name inside Ogg and AAC audio streams, and the empty application fields that Matroska requires.
+- **Files uploaded before the module was enabled**, and images that HumHub stores outside the file library (such as profile and space images), are not processed.
+
+## Requirements
+
+- HumHub 1.19 or later.
+- PHP 8.2 or later (the minimum of HumHub 1.19).
+- PHP extensions: `dom`, `libxml`, `mbstring`, `json` and `zlib`, which are part of almost every PHP installation. Without `zlib`, PDF files with compressed metadata and some Office files are passed on unchanged (and logged as errors).
+- No Composer packages and no external programs (exiftool, ImageMagick, ffmpeg...) at runtime. Those tools are used only by the test suite.
+
+See [MANUAL.md](MANUAL.md) for the settings and the console command.

@@ -1,0 +1,50 @@
+# Development environment: a real HumHub instance with this module mounted,
+# to test the HumHub-bound code (Events, LogService, claimUpload, admin page).
+#
+# Usage:
+#   docker compose -f tests/docker-compose.yml up -d
+#   # open http://localhost:8080 and finish the HumHub installer
+#   # (database host: db, name/user/password: humhub)
+#   # then enable the module: Administration -> Modules -> Metadata Cleaner
+#
+# Uses the official HumHub image. The module directory is mounted read-only
+# in /data/modules-custom, which the image loads modules from.
+services:
+  db:
+    image: mariadb:11
+    ports: ["3307:3306"]
+    environment:
+      MYSQL_ROOT_PASSWORD: humhub
+      MYSQL_DATABASE: humhub
+      MYSQL_USER: humhub
+      MYSQL_PASSWORD: humhub
+    volumes:
+      - db-data:/var/lib/mysql
+
+  humhub:
+    image: humhub/humhub:1.19
+    depends_on: [db]
+    environment:
+      # Plain HTTP on port 80 (no automatic HTTPS) for local testing.
+      SERVER_NAME: ":80"
+    volumes:
+      - humhub-data:/data
+      - ../:/data/modules-custom/metadata-cleaner:ro
+    ports: ["8080:80"]
+
+  # ClamAV daemon for the HumHub "Antivirus" marketplace module.
+  # Install the module from Administration -> Modules -> Marketplace, then
+  # configure it with host "clamav" and port 3310.
+  clamav:
+    image: clamav/clamav:stable
+    environment:
+      CLAMAV_NO_CLAMD: "false"
+      CLAMAV_NO_FRESHCLAMD: "false"
+    volumes:
+      - clamav-data:/var/lib/clamav
+    ports: ["3310:3310"]
+
+volumes:
+  db-data:
+  humhub-data:
+  clamav-data:
