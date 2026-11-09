@@ -1,0 +1,20 @@
+{
+    "id": "metadata-cleaner",
+    "version": "1.0.0",
+    "name": "Metadata Cleaner",
+    "description": "Automatically removes privacy-sensitive metadata (EXIF, XMP, IPTC, GPS position, author and device data) from files uploaded by users, directly on upload. Supports images, videos, audio files, camera RAW, PDF and Office documents, without re-encoding the files. Helps HumHub operators apply data minimisation and privacy-by-design principles.",
+    "humhub": {
+        "minVersion": "1.19"
+    },
+    "keywords": ["metadata", "exif", "xmp", "iptc", "gps", "privacy", "gdpr", "upload", "files", "pdf", "office", "svg", "audio", "video"],
+    "screenshots": ["assets/screenshots/settings.png", "assets/screenshots/existing-files.png", "assets/screenshots/activity.png", "assets/screenshots/log-entry.png"],
+    "homepage": "https://github.com/Freyrr/humhub-modules-metadata-cleaner",
+    "authors": [
+        {
+            "name": "Tommaso",
+            "homepage": "https://github.com/Freyrr",
+            "role": "Developer"
+        }
+    ],
+    "licence": "AGPL-3.0-or-later"
+}
