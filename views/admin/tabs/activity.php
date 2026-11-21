@@ -144,7 +144,7 @@ $formatSize = static function ($before, $after) {
         </div>
     </div>
 </div>
-<div class="row">
+<div class="row mt-3">
     <div class="col-12">
         <h5><?= Yii::t('MetadataCleanerModule.base', 'By format') ?></h5>
         <div class="table-responsive">
