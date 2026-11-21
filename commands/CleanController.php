@@ -17,21 +17,17 @@ use humhub\modules\metadataCleaner\services\LogService;
 use humhub\modules\metadataCleaner\services\MetadataCleanerService;
 use Throwable;
 use Yii;
-use yii\base\InlineAction;
 use yii\console\Controller;
 use yii\console\ExitCode;
 use yii\helpers\Console;
 
 /**
- * Purges expired log entries.
+ * Console commands of the module.
  *
  * Usage:
+ *   php yii metadata-cleaner/clean [--dryRun] [--batch=100] [--fromId=0]
  *   php yii metadata-cleaner/purge-log
- *
- * The bulk cleaning of all stored files (`metadata-cleaner/clean`) is
- * intentionally not documented and not listed by `php yii help`: it reads
- * every file and can take a long time and many resources. It is run by
- * {@see runClean()} through {@see createAction()}.
+ *   php yii metadata-cleaner/purge-stats
  */
 class CleanController extends Controller
 {
@@ -57,23 +53,15 @@ class CleanController extends Controller
     }
 
     /**
-     * Maps the hidden "clean" action to {@see runClean()}. A method named
-     * actionClean() would be listed by `php yii help`.
+     * Removes metadata from all stored files. Without --dryRun the files are
+     * rewritten and this cannot be undone: make a backup of the file storage
+     * first. Asks for confirmation unless --interactive=0 is given.
      */
-    public function createAction($id)
+    public function actionClean(): int
     {
-        if ($id === 'clean') {
-            return new InlineAction('clean', $this, 'runClean');
+        if (!$this->dryRun && !$this->confirm('This rewrites every stored file of the enabled types and cannot be undone. Did you make a backup of the file storage? Continue?')) {
+            return ExitCode::OK;
         }
-
-        return parent::createAction($id);
-    }
-
-    /**
-     * Removes metadata from all stored files (hidden "clean" action).
-     */
-    public function runClean(): int
-    {
         $module = $this->getModule();
         $service = $module->getCleanerService();
         $log = new LogService($module);

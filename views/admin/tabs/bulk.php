@@ -12,9 +12,13 @@ use humhub\modules\metadataCleaner\services\BulkCleanService;
 
 $bulkPercent = $bulkState['total'] > 0 ? min(100, (int)round($bulkState['processed'] / $bulkState['total'] * 100)) : 0;
 ?>
+<div id="metadata-cleaner-bulk">
 <p class="text-body-secondary">
     <?= Yii::t('MetadataCleanerModule.base', 'Files stored before the module was enabled are not cleaned automatically. A job cleans them in small batches while this page is open; it can be paused, resumed or stopped at any time.') ?>
 </p>
+<div class="alert alert-warning">
+    <?= Yii::t('MetadataCleanerModule.base', 'Cleaning rewrites the stored files and cannot be undone: make a backup of the file storage first.') ?>
+</div>
 <div class="bulk-clean-controls d-flex flex-wrap align-items-center gap-2 mb-3">
     <div class="form-check">
         <input class="form-check-input" type="checkbox" id="metadata-cleaner-bulk-dryrun">
@@ -48,4 +52,5 @@ $bulkPercent = $bulkState['total'] > 0 ? min(100, (int)round($bulkState['process
         <span><?= Yii::t('MetadataCleanerModule.base', 'Failed') ?>: <strong id="metadata-cleaner-bulk-failed">0</strong></span>
         <span class="text-body-secondary" id="metadata-cleaner-bulk-current"></span>
     </div>
+</div>
 </div>

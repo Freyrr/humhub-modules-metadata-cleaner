@@ -31,9 +31,14 @@ EXCLUDED_DIRS = {
 }
 EXCLUDED_FILES = {".DS_Store", "Thumbs.db", "desktop.ini"}
 EXCLUDED_PREFIXES = ("backup",)
+# Development tools: build, fixture, screenshot and demo-data scripts and the
+# Docker test stack. They are kept in the repository but not shipped.
+EXCLUDED_PATHS = ("tests/bin/", "tests/docker/", "tests/docker-compose.yml")
 
 
 def excluded(rel: str) -> bool:
+    if any(rel == path or rel.startswith(path) for path in EXCLUDED_PATHS):
+        return True
     parts = rel.split("/")
     if any(part in EXCLUDED_DIRS for part in parts[:-1]):
         return True

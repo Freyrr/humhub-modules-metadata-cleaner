@@ -7,7 +7,7 @@
         "minVersion": "1.19"
     },
     "keywords": ["metadata", "exif", "xmp", "iptc", "gps", "privacy", "gdpr", "upload", "files", "pdf", "office", "svg", "audio", "video"],
-    "screenshots": ["assets/screenshots/settings.png", "assets/screenshots/existing-files.png", "assets/screenshots/activity.png", "assets/screenshots/log-entry.png"],
+    "screenshots": ["resources/screenshots/settings.png", "resources/screenshots/existing-files.png", "resources/screenshots/activity.png", "resources/screenshots/log-entry.png"],
     "homepage": "https://github.com/Freyrr/humhub-modules-metadata-cleaner",
     "authors": [
         {

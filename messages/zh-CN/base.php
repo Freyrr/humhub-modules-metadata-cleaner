@@ -75,4 +75,10 @@ return [
     'Settings' => '设置',
     'Existing files' => '现有文件',
     'Activity' => '活动',
+    'Applies to new uploads only. Files whose content is saved in another way (for example a new version of an existing file, a save from an online editor or the cleaning of existing files) are never rejected or deleted: their content is kept unchanged and the error is logged.' => '仅适用于新上传的文件。以其他方式保存内容的文件（例如现有文件的新版本、在线编辑器的保存或现有文件的清理）永远不会被拒绝或删除：其内容保持不变，并记录错误。',
+    '<strong>Clean</strong> existing files' => '<strong>清理</strong>现有文件',
+    'The job rewrites every stored file of the selected types and removes its metadata. This cannot be undone. Make a backup of the file storage before you start, and run a dry run first to see what would change.' => '该任务会重写所选类型的每个已存储文件并删除其元数据。此操作无法撤销。开始之前请备份文件存储，并先进行试运行以查看会有哪些变化。',
+    'Start cleaning' => '开始清理',
+    'Cancel' => '取消',
+    'Cleaning rewrites the stored files and cannot be undone: make a backup of the file storage first.' => '清理会重写已存储的文件且无法撤销：请先备份文件存储。',
 ];

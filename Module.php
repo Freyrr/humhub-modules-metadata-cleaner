@@ -37,11 +37,6 @@ class Module extends \humhub\components\Module
     public const DEFAULT_RETENTION_DAYS = 30;
     public const DEFAULT_STATS_RETENTION_MONTHS = 3;
 
-    /**
-     * @inheritdoc
-     */
-    public $resourcesPath = 'assets';
-
     public function getLogMode(): string
     {
         $mode = $this->settings->get('logMode', self::LOG_FIELDS);

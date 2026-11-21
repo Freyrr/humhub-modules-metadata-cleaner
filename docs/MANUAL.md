@@ -96,12 +96,20 @@ The settings page is split into three tabs: *Settings* (the form below), *Existi
 
 Files uploaded **before** the module was enabled are not touched automatically. Two ways to clean them retroactively:
 
-- **Admin UI** — the *Existing files* tab of the module settings page starts a background job (in small batches, driven by the open page) with **Start**, **Pause**, **Resume** and **Stop** buttons, live counters and an optional *Dry run* that only reports what would change. The job state is kept in the module settings, so closing the page does not lose progress; reopening the page resumes polling while the job runs.
-- **Console** — `php yii metadata-cleaner/clean` processes every stored file in one run (`--dryRun` to preview, `--batch N` and `--fromId ID` to tune and resume).
+- **Admin UI** — the *Existing files* tab of the module settings page runs a job in small batches while the page is open, with **Start**, **Pause**, **Resume** and **Stop** buttons, live counters and an optional *Dry run* that only reports what would change. A real run asks for confirmation first. The job state is kept in the module settings, so closing the page pauses the work without losing progress; reopening the page continues while the job runs.
+- **Console** — `php yii metadata-cleaner/clean` processes every stored file in one run (see below).
+
+> **Make a backup first.** A real run rewrites the stored files of the enabled types and cannot be undone. Back up the file storage (`uploads/file`) before you start, and use *Dry run* to see what would change. Files that cannot be cleaned are left as they are and logged; they are never deleted.
 
 Both paths share the same cleaners, statistics and log (source `admin` or `console`).
 
-## Console command
+## Console commands
+
+```
+php yii metadata-cleaner/clean [--dryRun] [--batch=100] [--fromId=0]
+```
+
+Cleans every stored file. `--dryRun` (`-n`) only reports what would change, `--batch` sets the number of files loaded per query and `--fromId` resumes an interrupted run after the given file id. Without `--dryRun` the command asks for confirmation; add `--interactive=0` to skip it in scripts.
 
 ```
 php yii metadata-cleaner/purge-log

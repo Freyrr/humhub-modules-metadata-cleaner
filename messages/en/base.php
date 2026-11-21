@@ -75,4 +75,10 @@ return [
     'Settings' => '',
     'Existing files' => '',
     'Activity' => '',
+    'Applies to new uploads only. Files whose content is saved in another way (for example a new version of an existing file, a save from an online editor or the cleaning of existing files) are never rejected or deleted: their content is kept unchanged and the error is logged.' => '',
+    '<strong>Clean</strong> existing files' => '',
+    'The job rewrites every stored file of the selected types and removes its metadata. This cannot be undone. Make a backup of the file storage before you start, and run a dry run first to see what would change.' => '',
+    'Start cleaning' => '',
+    'Cancel' => '',
+    'Cleaning rewrites the stored files and cannot be undone: make a backup of the file storage first.' => '',
 ];

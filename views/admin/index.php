@@ -5,12 +5,13 @@
  */
 
 use humhub\components\View;
+use humhub\modules\metadataCleaner\assets\BulkCleanAsset;
 use humhub\modules\metadataCleaner\models\ConfigureForm;
 use humhub\modules\metadataCleaner\models\MetadataLogSearch;
 use humhub\modules\metadataCleaner\models\MetadataStats;
-use humhub\modules\metadataCleaner\services\BulkCleanService;
 use humhub\widgets\bootstrap\Tabs;
 use yii\data\ActiveDataProvider;
+use yii\helpers\Url;
 
 /* @var $this View */
 /* @var $model ConfigureForm */
@@ -59,9 +60,10 @@ Yii::setAlias('@metadataCleanerTabs', $this->context->module->getViewPath() . '/
     </div>
 </div>
 <?php
-$bulkConfig = [
-    'controlUrl' => \yii\helpers\Url::to(['bulk-clean']),
-    'stepUrl' => \yii\helpers\Url::to(['bulk-clean-step']),
+BulkCleanAsset::register($this);
+$this->registerJsConfig('metadataCleaner.bulk', [
+    'controlUrl' => Url::to(['bulk-clean']),
+    'stepUrl' => Url::to(['bulk-clean-step']),
     'state' => $bulkState,
     'tabBulkLabel' => Yii::t('MetadataCleanerModule.base', 'Existing files'),
     'labels' => [
@@ -72,86 +74,10 @@ $bulkConfig = [
         'dryRunSuffix' => Yii::t('MetadataCleanerModule.base', '(dry run)'),
         'currentFile' => Yii::t('MetadataCleanerModule.base', 'Current file: {name}'),
     ],
-];
-$bulkConfigJson = \yii\helpers\Json::encode($bulkConfig);
-$this->registerJs(<<<JS
-(function () {
-    var client = humhub.require('client');
-    var \$ = window.jQuery;
-    var cfg = {$bulkConfigJson};
-    var state = cfg.state;
-
-    function render() {
-        var s = state.status;
-        var active = s === 'running' || s === 'paused' || s === 'done';
-        \$('#metadata-cleaner-bulk-start').prop('disabled', s === 'running' || s === 'paused').toggle(s === 'idle' || s === 'done');
-        \$('#metadata-cleaner-bulk-pause').toggle(s === 'running');
-        \$('#metadata-cleaner-bulk-resume').toggle(s === 'paused');
-        \$('#metadata-cleaner-bulk-stop').toggle(s === 'running' || s === 'paused' || s === 'done');
-        \$('#metadata-cleaner-bulk-dryrun').prop('disabled', s === 'running' || s === 'paused');
-        \$('#metadata-cleaner-bulk-progress').toggle(active);
-
-        var label = (cfg.labels[s] || s) + (state.dryRun && s !== 'idle' ? ' ' + cfg.labels.dryRunSuffix : '');
-        \$('#metadata-cleaner-bulk-status').text(label);
-        \$('#metadata-cleaner-tab-bulk').text(
-            cfg.tabBulkLabel + ((s === 'running' || s === 'paused') ? ' (' + label + ')' : '')
-        );
-
-        var pct = state.total > 0 ? Math.min(100, Math.round(state.processed / state.total * 100)) : 0;
-        \$('#metadata-cleaner-bulk-bar').css('width', pct + '%');
-        \$('#metadata-cleaner-bulk-processed').text(state.processed + ' / ' + state.total);
-        \$('#metadata-cleaner-bulk-cleaned').text(state.cleaned);
-        \$('#metadata-cleaner-bulk-unchanged').text(state.unchanged);
-        \$('#metadata-cleaner-bulk-skipped').text(state.skipped);
-        \$('#metadata-cleaner-bulk-failed').text(state.failed);
-        \$('#metadata-cleaner-bulk-current').text(
-            state.currentFile ? cfg.labels.currentFile.replace('{name}', state.currentFile) : ''
-        );
-    }
-
-    function control(op, extra) {
-        var data = {op: op};
-        if (extra) { \$.extend(data, extra); }
-        return client.post(cfg.controlUrl, {data: data}).then(function (res) {
-            state = res.state;
-            render();
-            return state;
-        });
-    }
-
-    function step() {
-        if (state.status !== 'running') {
-            render();
-            return;
-        }
-        client.post(cfg.stepUrl, {}).then(function (res) {
-            state = res.state;
-            render();
-            if (state.status === 'running') {
-                step();
-            }
-        }).catch(function () {
-            render();
-        });
-    }
-
-    \$('#metadata-cleaner-bulk-start').on('click', function () {
-        control('start', {dryRun: \$('#metadata-cleaner-bulk-dryrun').is(':checked') ? 1 : 0}).then(step);
-    });
-    \$('#metadata-cleaner-bulk-pause').on('click', function () {
-        control('pause');
-    });
-    \$('#metadata-cleaner-bulk-resume').on('click', function () {
-        control('resume').then(step);
-    });
-    \$('#metadata-cleaner-bulk-stop').on('click', function () {
-        control('stop');
-    });
-
-    render();
-    if (state.status === 'running') {
-        step();
-    }
-})();
-JS
-);
+    'confirm' => [
+        'header' => Yii::t('MetadataCleanerModule.base', '<strong>Clean</strong> existing files'),
+        'body' => Yii::t('MetadataCleanerModule.base', 'The job rewrites every stored file of the selected types and removes its metadata. This cannot be undone. Make a backup of the file storage before you start, and run a dry run first to see what would change.'),
+        'confirm' => Yii::t('MetadataCleanerModule.base', 'Start cleaning'),
+        'cancel' => Yii::t('MetadataCleanerModule.base', 'Cancel'),
+    ],
+]);

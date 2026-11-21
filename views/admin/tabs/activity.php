@@ -95,8 +95,9 @@ $formatSize = static function ($before, $after) {
     <?= Yii::t('MetadataCleanerModule.base', 'Counts every file processed by the module: metadata removed, files already clean and errors. Figures cover only the configured retention period and are independent of the log.') ?>
 </p>
 <div class="row">
-    <div class="col-md-4">
+    <div class="col-md-6">
         <h5><?= Yii::t('MetadataCleanerModule.base', 'By status') ?></h5>
+        <div class="table-responsive">
         <table class="table table-condensed">
             <tbody>
             <?php foreach (MetadataStats::statusLabels() as $status => $label) : ?>
@@ -115,17 +116,46 @@ $formatSize = static function ($before, $after) {
             </tr>
             </tbody>
         </table>
+        </div>
     </div>
-    <div class="col-md-4">
-        <h5><?= Yii::t('MetadataCleanerModule.base', 'By format') ?></h5>
+    <div class="col-md-6">
+        <h5><?= Yii::t('MetadataCleanerModule.base', 'Last 6 months') ?></h5>
+        <div class="table-responsive">
         <table class="table table-condensed">
             <thead>
             <tr>
-                <th><?= Yii::t('MetadataCleanerModule.base', 'Format') ?></th>
-                <th class="text-end"><?= Yii::t('MetadataCleanerModule.base', 'Total') ?></th>
-                <th class="text-end"><?= Yii::t('MetadataCleanerModule.base', 'Removed') ?></th>
-                <th class="text-end"><?= Yii::t('MetadataCleanerModule.base', 'No metadata') ?></th>
-                <th class="text-end"><?= Yii::t('MetadataCleanerModule.base', 'Errors') ?></th>
+                <th class="text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'Month') ?></th>
+                <th class="text-end text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'Total') ?></th>
+                <th class="text-end text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'Removed') ?></th>
+                <th class="text-end text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'Errors') ?></th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($stats['byMonth'] as $row) : ?>
+                <tr>
+                    <td><?= Html::encode($row['month']) ?></td>
+                    <td class="text-end"><?= $row['total'] ?></td>
+                    <td class="text-end"><?= $row['cleaned'] ?></td>
+                    <td class="text-end"><?= $row['errors'] ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <h5><?= Yii::t('MetadataCleanerModule.base', 'By format') ?></h5>
+        <div class="table-responsive">
+        <table class="table table-condensed">
+            <thead>
+            <tr>
+                <th class="text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'Format') ?></th>
+                <th class="text-end text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'Total') ?></th>
+                <th class="text-end text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'Removed') ?></th>
+                <th class="text-end text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'No metadata') ?></th>
+                <th class="text-end text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'Errors') ?></th>
             </tr>
             </thead>
             <tbody>
@@ -143,28 +173,6 @@ $formatSize = static function ($before, $after) {
             <?php endif; ?>
             </tbody>
         </table>
-    </div>
-    <div class="col-md-4">
-        <h5><?= Yii::t('MetadataCleanerModule.base', 'Last 6 months') ?></h5>
-        <table class="table table-condensed">
-            <thead>
-            <tr>
-                <th><?= Yii::t('MetadataCleanerModule.base', 'Month') ?></th>
-                <th class="text-end"><?= Yii::t('MetadataCleanerModule.base', 'Total') ?></th>
-                <th class="text-end"><?= Yii::t('MetadataCleanerModule.base', 'Removed') ?></th>
-                <th class="text-end"><?= Yii::t('MetadataCleanerModule.base', 'Errors') ?></th>
-            </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($stats['byMonth'] as $row) : ?>
-                <tr>
-                    <td><?= Html::encode($row['month']) ?></td>
-                    <td class="text-end"><?= $row['total'] ?></td>
-                    <td class="text-end"><?= $row['cleaned'] ?></td>
-                    <td class="text-end"><?= $row['errors'] ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
+        </div>
     </div>
 </div>

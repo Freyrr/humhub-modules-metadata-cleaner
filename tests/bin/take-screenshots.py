@@ -93,6 +93,6 @@ def run(hh_lang, out_dir):
 
 
 if __name__ == '__main__':
-    shots = REPO / 'assets' / 'screenshots'
+    shots = REPO / 'resources' / 'screenshots'
     run('en', shots)
     run('it', shots / 'it')

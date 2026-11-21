@@ -75,4 +75,10 @@ return [
     'Settings' => 'Definições',
     'Existing files' => 'Ficheiros existentes',
     'Activity' => 'Atividade',
+    'Applies to new uploads only. Files whose content is saved in another way (for example a new version of an existing file, a save from an online editor or the cleaning of existing files) are never rejected or deleted: their content is kept unchanged and the error is logged.' => 'Aplica-se apenas a novos envios. Os ficheiros cujo conteúdo é guardado de outra forma (por exemplo, uma nova versão de um ficheiro existente, uma gravação a partir de um editor online ou a limpeza de ficheiros existentes) nunca são rejeitados nem eliminados: o seu conteúdo fica inalterado e o erro é registado.',
+    '<strong>Clean</strong> existing files' => '<strong>Limpar</strong> ficheiros existentes',
+    'The job rewrites every stored file of the selected types and removes its metadata. This cannot be undone. Make a backup of the file storage before you start, and run a dry run first to see what would change.' => 'A tarefa reescreve cada ficheiro guardado dos tipos selecionados e remove os seus metadados. Esta operação não pode ser anulada. Faça uma cópia de segurança do armazenamento de ficheiros antes de começar e execute primeiro uma simulação para ver o que mudaria.',
+    'Start cleaning' => 'Iniciar a limpeza',
+    'Cancel' => 'Cancelar',
+    'Cleaning rewrites the stored files and cannot be undone: make a backup of the file storage first.' => 'A limpeza reescreve os ficheiros guardados e não pode ser anulada: faça primeiro uma cópia de segurança do armazenamento de ficheiros.',
 ];
