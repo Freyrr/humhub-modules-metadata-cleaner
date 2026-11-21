@@ -17,14 +17,16 @@ camera RAW, PDF and Office/OpenDocument files — **without re-encoding them**.
 | Audio | M4A, MP3, AAC, FLAC, Ogg/Opus, WAV, AIFF |
 | Documents | PDF, Office (DOCX/XLSX/PPTX), OpenDocument (ODT/ODS/ODP) |
 
-Every format can be enabled or disabled individually. Files that cannot be
-cleaned are either passed through unchanged or rejected, depending on the
-configuration.
+Every format can be enabled or disabled individually. New uploads that cannot
+be cleaned are either passed through unchanged or rejected, depending on the
+configuration. Files that already exist are never rejected or deleted, and
+digitally signed documents are left unchanged so that their signature stays
+valid.
 
 ## Features
 
-- Cleaning runs on upload and on already-stored files (bulk cleanup via
-  console command)
+- Cleaning runs on upload and on already-stored files (bulk cleanup from the
+  *Existing files* tab of the settings or the console command)
 - Optional audit log of removed fields with configurable retention
 - Optional preservation of the EXIF orientation tag
 - Works with any HumHub storage driver (local, S3, ...)
@@ -46,7 +48,8 @@ reporting or contact the maintainer through the repository.
 
 ## Documentation
 
-- [User guide](docs/README.md)
+- [Overview](docs/README.md)
+- [Installation](docs/INSTALLATION.md)
 - [Technical manual](docs/MANUAL.md)
 - [Changelog](docs/CHANGELOG.md)
 
@@ -57,7 +60,16 @@ this directory to `protected/modules/metadata-cleaner` (or a custom module
 path) and enable it.
 
 Database migrations run automatically on module enable. To clean existing
-files: `php yii metadata-cleaner/clean`
+files: `php yii metadata-cleaner/clean` (make a backup of the file storage
+first).
+
+## Tests
+
+- Cleaner tests, no HumHub needed:
+  `cd tests && codecept run cleaners -c codeception.cleaners.yml`
+- HumHub integration tests (unit and functional), from the module's `tests`
+  folder of a HumHub test installation:
+  `HUMHUB_PATH=/path/to/humhub codecept run unit,functional`
 
 ## Development
 

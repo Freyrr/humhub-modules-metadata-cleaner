@@ -1,53 +1,37 @@
 <?php
 
 /**
- * This is the initial test bootstrap, which will load the default test bootstrap from the humhub core
+ * @license AGPL-3.0-or-later
  */
 
-// Parse the environment arguments (Note: only simple --env ENV is supported no comma sepration merge...)
-use Codeception\Configuration;
-use Codeception\Util\Autoload;
+/*
+ * Bootstrap of the HumHub test suites (unit, functional). It loads the
+ * default test bootstrap of the HumHub core.
+ *
+ * The HumHub installation is found through the HUMHUB_PATH environment
+ * variable, then the "humhub_root" entry of tests/config/test.php, and
+ * otherwise the module is expected in protected/modules/metadata-cleaner.
+ *
+ * The cleaner tests do not need HumHub and do not use this file: see
+ * tests/codeception.cleaners.yml.
+ */
 
-$env = $GLOBALS['env'] ?? [];
+$testRoot = dirname(__DIR__);
 
-// If environment was set try loading special environment config else load default
-if (count($env) > 0) {
-    Configuration::append(['environment' => $env]);
+\Codeception\Configuration::append(['test_root' => $testRoot]);
+codecept_debug('Module root: ' . $testRoot);
 
-
-    $envCfgFile = dirname(__DIR__) . '/config/env/test.' . $env[0][0] . '.php';
-
-    if (file_exists($envCfgFile)) {
-        $cfg = array_merge(require_once(__DIR__ . '/../config/test.php'), require_once($envCfgFile));
-    }
+$humhubPath = getenv('HUMHUB_PATH');
+if ($humhubPath === false) {
+    $moduleConfig = require $testRoot . '/config/test.php';
+    $humhubPath = $moduleConfig['humhub_root'] ?? dirname(__DIR__, 5);
 }
 
-// If no environment is set we have to load the default config
-if (!isset($cfg)) {
-    $cfg = require_once(__DIR__ . '/../config/test.php');
-}
+\Codeception\Configuration::append(['humhub_root' => $humhubPath]);
+codecept_debug('HumHub Root: ' . $humhubPath);
 
-// If no humhub_root is given we assume our module is in the a root to be in /protected/humhub/modules/<module>/tests/codeception directory
-$cfg['humhub_root'] ??= dirname(__DIR__) . '/../../../../..';
+// Load the test configuration (/config/test.php or /config/env/<environment>/test.php)
+$globalConfig = require $humhubPath . '/protected/humhub/tests/codeception/_loadConfig.php';
 
-
-// Load default test bootstrap
-require_once($cfg['humhub_root'] . '/protected/humhub/tests/codeception/_bootstrap.php');
-
-// Overwrite the default test alias
-Yii::setAlias('@tests', dirname(__DIR__));
-Yii::setAlias('@env', '@tests/config/env');
-Yii::setAlias('@root', $cfg['humhub_root']);
-Yii::setAlias('@humhubTests', $cfg['humhub_root'] . '/protected/humhub/tests');
-
-// Load all supporting test classes needed for test execution
-Autoload::addNamespace('', Yii::getAlias('@humhubTests/codeception/_support'));
-Autoload::addNamespace('tests\codeception\fixtures', Yii::getAlias('@humhubTests/codeception/fixtures'));
-Autoload::addNamespace('', Yii::getAlias('@humhubTests/codeception/_pages'));
-if (isset($cfg['modules'])) {
-    Configuration::append(['humhub_modules' => $cfg['modules']]);
-}
-
-if (isset($cfg['fixtures'])) {
-    Configuration::append(['fixtures' => $cfg['fixtures']]);
-}
+// Load the default test bootstrap (initializes Yii)
+require $globalConfig['humhub_root'] . '/protected/humhub/tests/codeception/_bootstrap.php';
