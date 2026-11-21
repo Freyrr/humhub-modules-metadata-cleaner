@@ -37,7 +37,7 @@ class EventsTest extends HumHubDbTestCase
 
     public function testUploadIsCleanedOnValidation(): void
     {
-        $upload = $this->upload('meta.jpg', 'image/jpeg');
+        $upload = $this->upload('meta-plain.jpg', 'image/jpeg');
         $before = file_get_contents($upload->uploadedFile->tempName);
 
         $this->assertTrue($upload->validate());
@@ -81,10 +81,10 @@ class EventsTest extends HumHubDbTestCase
     {
         $file = $this->prepareFile();
 
-        $file->setStoredFileContent(file_get_contents($this->fixture('meta.jpg')));
+        $file->setStoredFileContent(file_get_contents($this->fixture('meta-plain.jpg')));
 
         $content = $file->getStore()->getContent();
-        $this->assertNotSame(file_get_contents($this->fixture('meta.jpg')), $content);
+        $this->assertNotSame(file_get_contents($this->fixture('meta-plain.jpg')), $content);
         $this->assertSame(sha1($content), $file->hash_sha1);
         $this->assertSame(strlen($content), (int)$file->size);
     }
