@@ -95,13 +95,38 @@ final class OfficeCleaner implements CleanerInterface
             if ($replacements === [] && $comment === '') {
                 return new CleanResult(FormatDetector::FORMAT_OFFICE, false, $removed);
             }
-            $out = $this->rebuild($entries, $replacements);
+            if (self::isSigned($byName)) {
+                throw new SignedDocumentException();
+            }
+            $tmp = FileIo::writeTemp($path, fn ($out) => $this->rebuild($out, $entries, $replacements));
         } finally {
             fclose($fh);
         }
-        FileIo::replace($path, $out);
+        FileIo::commit($tmp, $path);
 
         return new CleanResult(FormatDetector::FORMAT_OFFICE, true, $removed);
+    }
+
+    /**
+     * Whether the archive holds a digital signature: the signature parts of
+     * Office Open XML (_xmlsignatures/) or the document signatures of
+     * OpenDocument (META-INF/documentsignatures.xml). The Office signature
+     * covers the properties parts, so changing them invalidates it.
+     *
+     * @param array<string, int> $byName
+     */
+    private static function isSigned(array $byName): bool
+    {
+        if (isset($byName['META-INF/documentsignatures.xml'])) {
+            return true;
+        }
+        foreach (array_keys($byName) as $name) {
+            if (str_starts_with(strtolower((string)$name), '_xmlsignatures/')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -253,16 +278,19 @@ final class OfficeCleaner implements CleanerInterface
     }
 
     /**
-     * Writes the archive again with the replaced entries stored uncompressed.
+     * Writes the archive again to $out with the replaced entries stored
+     * uncompressed. The other entries are copied from the original file in
+     * chunks, so the archive is never held in memory as a whole.
      *
+     * @param resource $out
      * @param array<string, string> $replacements
      */
-    private function rebuild(array $entries, array $replacements): string
+    private function rebuild($out, array $entries, array $replacements): void
     {
-        $out = '';
+        $written = 0;
         $central = '';
         foreach ($entries as $entry) {
-            $offset = strlen($out);
+            $offset = $written;
             if (isset($replacements[$entry['name']])) {
                 if ($entry['flags'] & 0x01) {
                     throw new CleanerException('Encrypted properties entry.');
@@ -270,20 +298,24 @@ final class OfficeCleaner implements CleanerInterface
                 $content = $replacements[$entry['name']];
                 $flags = $entry['flags'] & 0x0800;
                 $crc = crc32($content);
-                $out .= "PK\x03\x04" . pack('vvvvvVVVvv', 20, $flags, 0, $entry['time'], $entry['date'], $crc, strlen($content), strlen($content), strlen($entry['name']), 0)
+                $local = "PK\x03\x04" . pack('vvvvvVVVvv', 20, $flags, 0, $entry['time'], $entry['date'], $crc, strlen($content), strlen($content), strlen($entry['name']), 0)
                     . $entry['name'] . $content;
+                FileIo::write($out, $local);
+                $written += strlen($local);
                 $central .= "PK\x01\x02" . pack('vvvvvvVVVvvvvvVV', $entry['madeBy'], 20, $flags, 0, $entry['time'], $entry['date'], $crc, strlen($content), strlen($content), strlen($entry['name']), 0, 0, 0, $entry['internal'], $entry['external'], $offset)
                     . $entry['name'];
                 continue;
             }
             [$start, , $end] = $entry['range'];
-            $out .= FileIo::readAt($this->fh, $start, $end - $start);
+            FileIo::copyRange($this->fh, $out, $start, $end - $start);
+            $written += $end - $start;
             $central .= "PK\x01\x02" . pack('vvvvvvVVVvvvvvVV', $entry['madeBy'], $entry['needed'], $entry['flags'], $entry['method'], $entry['time'], $entry['date'], $entry['crc'], $entry['csize'], $entry['usize'], strlen($entry['name']), strlen($entry['extra']), 0, 0, $entry['internal'], $entry['external'], $offset)
                 . $entry['name'] . $entry['extra'];
         }
-        $cdOffset = strlen($out);
-
-        return $out . $central . "PK\x05\x06" . pack('vvvvVVv', 0, 0, count($entries), count($entries), strlen($central), $cdOffset, 0);
+        if ($written > 0xFFFFFFFF) {
+            throw new CleanerException('Office file too large for a ZIP archive without ZIP64.');
+        }
+        FileIo::write($out, $central . "PK\x05\x06" . pack('vvvvVVv', 0, 0, count($entries), count($entries), strlen($central), $written, 0));
     }
 
     /**

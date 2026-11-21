@@ -11,13 +11,13 @@ use humhub\modules\file\models\FileUpload;
 use humhub\modules\metadataCleaner\cleaners\CleanerException;
 use humhub\modules\metadataCleaner\cleaners\CleanResult;
 use humhub\modules\metadataCleaner\cleaners\FormatDetector;
+use humhub\modules\metadataCleaner\cleaners\SignedDocumentException;
 use humhub\modules\metadataCleaner\models\MetadataLog;
 use humhub\modules\metadataCleaner\models\MetadataStats;
 use humhub\modules\metadataCleaner\services\LogService;
 use Throwable;
 use Yii;
 use yii\base\Event;
-use yii\base\UserException;
 use yii\web\UploadedFile;
 
 /**
@@ -28,9 +28,10 @@ use yii\web\UploadedFile;
  * 2. after any new file content is stored (API, imports, other modules...),
  *    as a safety net.
  *
- * Every error is caught. Depending on the "onError" setting the file is then
- * either passed to HumHub unchanged (default) or rejected: as a validation
- * error on upload, or by deleting the stored file afterwards.
+ * Cleaning errors are caught. On upload, depending on the "onError" setting,
+ * the file is then either passed to HumHub unchanged (default) or rejected
+ * with a validation error. Stored files are never rejected or deleted: when
+ * their content cannot be cleaned it is kept unchanged and the error logged.
  * Files are only ever replaced atomically, so a failure never leaves a
  * half-written file behind.
  */
@@ -77,10 +78,13 @@ class Events
             self::$handledUploads[$hash] = true;
             (new LogService($module))->recordUpload($file, $result, $sizeBefore, $size, $hash);
         } catch (Throwable $e) {
-            self::logFailure($file->file_name, $e, $module);
+            // A signed document is a valid file that must stay unchanged:
+            // it is never rejected.
+            $reject = $module->getOnError() === Module::ON_ERROR_REJECT && !$e instanceof SignedDocumentException;
+            self::logFailure($file->file_name, $e, $module, $reject);
             try {
                 $format = self::detectFormat($file->uploadedFile->tempName);
-                if ($module->getOnError() === Module::ON_ERROR_REJECT) {
+                if ($reject) {
                     $file->addError('uploadedFile', self::rejectMessage((string)$file->file_name));
                     (new LogService($module))->recordFailure(null, (string)$file->file_name, $format, $e, MetadataLog::STATUS_REJECTED, LogService::SOURCE_UPLOAD, (int)@filesize($file->uploadedFile->tempName));
                 } else {
@@ -128,25 +132,20 @@ class Events
         try {
             $result = self::cleanStoredFile($file, $module);
         } catch (Throwable $e) {
-            self::logFailure($file->file_name, $e, $module);
-            $reject = $module->getOnError() === Module::ON_ERROR_REJECT;
+            // Never reject or delete here: this event also runs when another
+            // module (file versions, online editors, the REST API) replaces
+            // the content of an existing file, and deleting it would destroy
+            // the user's file with all its versions. The content is kept as
+            // stored and the failure is logged.
+            self::logFailure($file->file_name, $e, $module, false);
             (new LogService($module))->recordFailure(
                 $file,
                 (string)$file->file_name,
                 null,
                 $e,
-                $reject ? MetadataLog::STATUS_REJECTED : MetadataLog::STATUS_PASSED,
+                MetadataLog::STATUS_PASSED,
                 LogService::SOURCE_STORED,
             );
-            if ($reject) {
-                $name = (string)$file->file_name;
-                try {
-                    $file->delete();
-                } catch (Throwable $deleteError) {
-                    Yii::error($deleteError, 'metadata-cleaner');
-                }
-                throw new UserException(self::rejectMessage($name));
-            }
             return;
         }
 
@@ -268,12 +267,12 @@ class Events
         }
     }
 
-    private static function logFailure(?string $fileName, Throwable $e, Module $module): void
+    private static function logFailure(?string $fileName, Throwable $e, Module $module, bool $rejected): void
     {
         $message = sprintf(
             'Metadata of "%s" not removed (%s): %s',
             (string)$fileName,
-            $module->getOnError() === Module::ON_ERROR_REJECT ? 'file rejected' : 'file kept unchanged',
+            $rejected ? 'file rejected' : 'file kept unchanged',
             $e->getMessage(),
         );
         if ($e instanceof CleanerException) {

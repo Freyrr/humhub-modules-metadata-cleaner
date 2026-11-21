@@ -76,6 +76,7 @@ class ConfigureForm extends Model
             'statsRetentionMonths' => Yii::t('MetadataCleanerModule.base', 'Monthly totals older than this are deleted automatically every day.'),
             'keepOrientation' => Yii::t('MetadataCleanerModule.base', 'Without it, some photos taken with a phone are shown rotated.'),
             'formats' => Yii::t('MetadataCleanerModule.base', 'Files of unticked types are stored as uploaded, with their metadata.'),
+            'onError' => Yii::t('MetadataCleanerModule.base', 'Applies to new uploads only. Files whose content is saved in another way (for example a new version of an existing file, a save from an online editor or the cleaning of existing files) are never rejected or deleted: their content is kept unchanged and the error is logged.'),
         ];
     }
 

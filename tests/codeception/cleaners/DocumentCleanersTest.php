@@ -11,6 +11,7 @@ use humhub\modules\metadataCleaner\cleaners\CleanerException;
 use humhub\modules\metadataCleaner\cleaners\CleanOptions;
 use humhub\modules\metadataCleaner\cleaners\FormatDetector;
 use humhub\modules\metadataCleaner\cleaners\PdfCleaner;
+use humhub\modules\metadataCleaner\cleaners\SignedDocumentException;
 use humhub\modules\metadataCleaner\readers\FieldExtractor;
 use humhub\modules\metadataCleaner\services\MetadataCleanerService;
 use ZipArchive;
@@ -141,6 +142,20 @@ class DocumentCleanersTest extends CleanerTestCase
         }
     }
 
+    public function testSignedPdfIsLeftUnchanged(): void
+    {
+        $path = $this->copyFixture('meta.pdf');
+        file_put_contents($path, "\n99 0 obj\n<< /Type /Sig /Filter /Adobe.PPKLite /ByteRange [0 100 200 300] /Contents <00> >>\nendobj\n", FILE_APPEND);
+        $before = file_get_contents($path);
+
+        $this->expectException(SignedDocumentException::class);
+        try {
+            (new MetadataCleanerService())->cleanPath($path);
+        } finally {
+            $this->assertSame($before, file_get_contents($path));
+        }
+    }
+
     public function testZlibStreamsHaveTheRequestedLength(): void
     {
         foreach ([20, 120, 70000, 140000] as $length) {
@@ -182,6 +197,61 @@ class DocumentCleanersTest extends CleanerTestCase
                 }
             }
         }
+    }
+
+    /**
+     * @dataProvider signedArchives
+     */
+    public function testSignedOfficeFileIsLeftUnchanged(string $name, string $signature): void
+    {
+        if (!class_exists(ZipArchive::class)) {
+            $this->markTestSkipped('The zip extension is not installed.');
+        }
+        $path = $this->copyFixture($name);
+        $zip = new ZipArchive();
+        $this->assertTrue($zip->open($path) === true);
+        $zip->addFromString($signature, '<Signature/>');
+        $zip->close();
+        $before = file_get_contents($path);
+
+        try {
+            (new MetadataCleanerService())->cleanPath($path);
+            $this->fail('A signed document must not be cleaned.');
+        } catch (SignedDocumentException) {
+        }
+        $this->assertSame($before, file_get_contents($path));
+    }
+
+    public static function signedArchives(): array
+    {
+        return [
+            'docx' => ['meta.docx', '_xmlsignatures/sig1.xml'],
+            'odt' => ['meta.odt', 'META-INF/documentsignatures.xml'],
+        ];
+    }
+
+    public function testLargeOfficeFileIsRebuiltWithoutLoadingItInMemory(): void
+    {
+        if (!class_exists(ZipArchive::class)) {
+            $this->markTestSkipped('The zip extension is not installed.');
+        }
+        $path = $this->copyFixture('meta.docx');
+        $zip = new ZipArchive();
+        $this->assertTrue($zip->open($path) === true);
+        $zip->addFromString('word/media/video1.bin', random_bytes(32 * 1024 * 1024));
+        $zip->setCompressionName('word/media/video1.bin', ZipArchive::CM_STORE);
+        $zip->close();
+        $hash = hash('sha256', (string)$this->zipEntries($path)['word/media/video1.bin']);
+        gc_collect_cycles();
+
+        memory_reset_peak_usage();
+        $base = memory_get_usage();
+        $result = (new MetadataCleanerService())->cleanPath($path);
+        $peak = memory_get_peak_usage() - $base;
+
+        $this->assertTrue($result->changed);
+        $this->assertLessThan(8 * 1024 * 1024, $peak, 'peak memory while cleaning');
+        $this->assertSame($hash, hash('sha256', (string)$this->zipEntries($path)['word/media/video1.bin']));
     }
 
     public function testOpenDocumentMimetypeStaysFirstAndStored(): void

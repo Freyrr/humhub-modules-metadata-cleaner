@@ -27,7 +27,8 @@ use humhub\modules\metadataCleaner\readers\XmpReader;
  * recovered from the file.
  *
  * Encrypted PDFs are not supported. Metadata inside embedded images and
- * attached files is not changed.
+ * attached files is not changed. Digitally signed PDFs are left unchanged,
+ * because any change to the signed bytes invalidates the signature.
  */
 final class PdfCleaner implements CleanerInterface
 {
@@ -72,6 +73,9 @@ final class PdfCleaner implements CleanerInterface
         if ($patches === []) {
             return new CleanResult(FormatDetector::FORMAT_PDF, false, $removed);
         }
+        if ($this->isSigned()) {
+            throw new SignedDocumentException();
+        }
         $out = $this->data;
         ksort($patches);
         foreach ($patches as $offset => $bytes) {
@@ -83,6 +87,15 @@ final class PdfCleaner implements CleanerInterface
         FileIo::replace($path, $out);
 
         return new CleanResult(FormatDetector::FORMAT_PDF, true, $removed);
+    }
+
+    /**
+     * Whether the file holds a digital signature or a document timestamp:
+     * a signature dictionary with a /ByteRange array of four integers.
+     */
+    private function isSigned(): bool
+    {
+        return preg_match('/\/ByteRange[ \t\r\n\f\x00]*\[[ \t\r\n\f\x00]*[0-9]+[ \t\r\n\f\x00]+[0-9]+[ \t\r\n\f\x00]+[0-9]+[ \t\r\n\f\x00]+[0-9]+[ \t\r\n\f\x00]*\]/', $this->data) === 1;
     }
 
     /**

@@ -57,27 +57,63 @@ final class FileIo
      */
     public static function keepRanges(string $path, array $ranges): void
     {
+        $in = @fopen($path, 'rb');
+        if ($in === false) {
+            throw new CleanerException('Cannot open file.');
+        }
+        try {
+            $tmp = self::writeTemp($path, static function ($out) use ($in, $ranges): void {
+                foreach ($ranges as [$offset, $length]) {
+                    self::copyRange($in, $out, $offset, $length);
+                }
+            });
+        } finally {
+            fclose($in);
+        }
+        self::commit($tmp, $path);
+    }
+
+    /**
+     * Writes a temporary file next to $path through $write, which receives
+     * the open output handle. The original is not touched: pass the returned
+     * path to commit() to replace it, once every handle on it is closed.
+     *
+     * @param callable(resource): void $write
+     * @return string path of the temporary file
+     */
+    public static function writeTemp(string $path, callable $write): string
+    {
         $tmp = @tempnam(dirname($path), '.mdc');
         if ($tmp === false) {
             throw new CleanerException('Cannot create temporary file.');
         }
         try {
-            $in = @fopen($path, 'rb');
             $out = @fopen($tmp, 'wb');
-            if ($in === false || $out === false) {
-                throw new CleanerException('Cannot open file.');
+            if ($out === false) {
+                throw new CleanerException('Cannot open temporary file.');
             }
             try {
-                foreach ($ranges as [$offset, $length]) {
-                    if ($length > 0 && stream_copy_to_stream($in, $out, $length, $offset) !== $length) {
-                        throw new CleanerException('Cannot copy file data.');
-                    }
+                $write($out);
+                if (!fflush($out)) {
+                    throw new CleanerException('Cannot write temporary file.');
                 }
-                fflush($out);
             } finally {
-                fclose($in);
                 fclose($out);
             }
+        } catch (\Throwable $e) {
+            @unlink($tmp);
+            throw $e;
+        }
+
+        return $tmp;
+    }
+
+    /**
+     * Atomically replaces $path with the temporary file made by writeTemp().
+     */
+    public static function commit(string $tmp, string $path): void
+    {
+        try {
             $perms = @fileperms($path);
             if ($perms !== false) {
                 @chmod($tmp, $perms & 0777);
@@ -91,6 +127,35 @@ final class FileIo
             }
         }
         clearstatcache(true, $path);
+    }
+
+    /**
+     * Copies $length bytes at $offset of $in to the current position of $out.
+     *
+     * @param resource $in
+     * @param resource $out
+     */
+    public static function copyRange($in, $out, int $offset, int $length): void
+    {
+        if ($length <= 0) {
+            return;
+        }
+        // stream_copy_to_stream() does not seek for an offset of 0.
+        if ($offset < 0 || fseek($in, $offset) !== 0 || stream_copy_to_stream($in, $out, $length) !== $length) {
+            throw new CleanerException('Cannot copy file data.');
+        }
+    }
+
+    /**
+     * Writes all of $data to $out.
+     *
+     * @param resource $out
+     */
+    public static function write($out, string $data): void
+    {
+        if ($data !== '' && fwrite($out, $data) !== strlen($data)) {
+            throw new CleanerException('Cannot write temporary file.');
+        }
     }
 
     /**
