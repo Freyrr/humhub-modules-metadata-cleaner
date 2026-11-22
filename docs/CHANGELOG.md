@@ -1,6 +1,17 @@
 Changelog
 =========
 
+1.0.1 (November 22, 2026)
+--------------------------
+- Fix: When the content of an existing file is replaced (new version, online editor, REST API) and cannot be cleaned, the file is no longer deleted in "Reject the file" mode: the content is kept and the error is logged. Rejecting applies to new uploads only.
+- Enh: Digitally signed PDF, Office and OpenDocument files are left unchanged, so their signatures stay valid. The settings page says so, and the log and statistics count them as "Signed, not modified".
+- Enh: Office and OpenDocument files are rebuilt in a temporary file instead of in memory.
+- Enh: Cleaning existing files asks for confirmation and reminds to make a backup first, in the settings and on the console.
+- Enh: The console command `metadata-cleaner/clean` is a regular, documented action.
+- Chg: Requirements moved to `docs/INSTALLATION.md`; privacy laws and limits moved to `docs/MANUAL.md`.
+- Chg: Settings page script moved to an asset bundle; icon and screenshots moved to `resources/`; unused PSD cleaner removed.
+- Chg: Test bootstrap follows the current HumHub module template (`HUMHUB_PATH`); new integration tests for the upload and stored-file events and the admin access.
+
 1.0.0 (November 4, 2026)
 ------------------------
 - Enh: Initial release: cleans metadata (EXIF, XMP, IPTC, GPS, author and device data) from uploaded files without re-encoding.
@@ -15,11 +26,3 @@ Changelog
 - Enh: Requires HumHub 1.19.
 - Enh: The module settings page is split into three tabs (*Settings*, *Existing files*, *Activity*) instead of one long scrolling page.
 - Fix: Files larger than 64 MB of memory-bound formats (TIFF/RAW, WAV, AVI, AIFF, PDF, SVG and still images) are no longer cleaned in memory: they are passed unchanged or rejected instead of risking a PHP memory exhaustion. The limit is additionally capped by the "Maximum upload file size" set in the HumHub file module settings.
-- Fix: When the content of an existing file is replaced (new version, online editor, REST API) and cannot be cleaned, the file is no longer deleted in "Reject the file" mode: the content is kept and the error is logged. Rejecting applies to new uploads only.
-- Enh: Digitally signed PDF, Office and OpenDocument files are left unchanged, so their signatures stay valid. The settings page says so, and the log and statistics count them as "Signed, not modified".
-- Enh: Office and OpenDocument files are rebuilt in a temporary file instead of in memory.
-- Enh: Cleaning existing files asks for confirmation and reminds to make a backup first, in the settings and on the console.
-- Enh: The console command `metadata-cleaner/clean` is a regular, documented action.
-- Chg: Requirements moved to `docs/INSTALLATION.md`; privacy laws and limits moved to `docs/MANUAL.md`.
-- Chg: Settings page script moved to an asset bundle; icon and screenshots moved to `resources/`; unused PSD cleaner removed.
-- Chg: Test bootstrap follows the current HumHub module template (`HUMHUB_PATH`); new integration tests for the upload and stored-file events and the admin access.
