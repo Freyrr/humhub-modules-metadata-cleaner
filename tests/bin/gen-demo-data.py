@@ -112,8 +112,13 @@ def pick_weighted(items):
         if r <= acc: return it
     return items[-1]
 
-def pick_status():
+SIGNABLE = {"pdf", "docx", "xlsx", "pptx", "odt"}
+SIGNED_ERROR = "Digitally signed document: left unchanged so that the signature stays valid."
+
+def pick_status(code):
     r = random.random()
+    if code in SIGNABLE and random.random() < 0.12:
+        return "signed"
     return "cleaned" if r < 0.60 else ("clean" if r < 0.90 else ("passed" if r < 0.96 else "rejected"))
 
 def pick_source():
@@ -131,7 +136,7 @@ events = []
 for (y, m) in MONTHS:
     for _ in range(random.randint(155, 175)):
         code, mime, w, (lo, hi) = pick_weighted(FORMATS)
-        status = pick_status()
+        status = pick_status(code)
         size = random.randint(lo, hi)
         if status == "cleaned":
             lo_s, hi_s = SAVED_RANGE.get(code, (5_000, 200_000))
@@ -139,7 +144,7 @@ for (y, m) in MONTHS:
             size_after = size - saved
         elif status == "clean":
             saved = 0; size_after = size
-        elif status == "passed":
+        elif status in ("passed", "signed"):
             saved = 0; size_after = size
         else:
             saved = 0; size_after = None
@@ -152,9 +157,9 @@ for (y, m) in MONTHS:
                                   random.randint(0,59), random.randint(100000,999999), random.randint(100000,999999), random.randint(0,999))
         events.append(dict(dt=rand_dt(y,m), fmt=code, mime=mime, status=status, size=size, after=size_after,
                            saved=saved, source=pick_source(), user=random.choice(USERS), file=random.choice(FILES),
-                           name=name, meta=meta, err=random.choice(ERRORS) if status in ("passed","rejected") else None))
+                           name=name, meta=meta, err=SIGNED_ERROR if status == "signed" else (random.choice(ERRORS) if status in ("passed","rejected") else None)))
 
-random.shuffle(events)
+events.sort(key=lambda e: e["dt"])  # newest rows last, as in a real log
 log_rows = []; stats = {}
 for e in events:
     ym = e["dt"].strftime("%Y-%m")
