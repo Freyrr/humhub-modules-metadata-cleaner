@@ -1,7 +1,9 @@
 name: Release to HumHub Marketplace
 
-# Builds the Marketplace ZIP and uploads it as a new module version.
-# Triggered by version tags (v1.2.3) or manually from the Actions tab.
+# A version tag (v1.2.3) builds the Marketplace ZIP and attaches it to a
+# GitHub Release for that tag. Nothing is uploaded to the Marketplace then.
+# Running the workflow manually from the Actions tab on a tag also uploads
+# the ZIP to the Marketplace as a new module version.
 #
 # Required secret: MARKETPLACE_API_KEY — create it in the HumHub Partner
 # Portal (partner.humhub.com) under your publisher account.
@@ -13,6 +15,9 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -32,13 +37,35 @@ jobs:
           fi
 
       - name: Build Marketplace package
-        run: python3 tests/bin/build-marketplace-zip.py --src . --out "metadata-cleaner-${{ github.ref_name }}.zip"
+        run: python3 tests/bin/build-marketplace-zip.py --src . --out "metadata-cleaner-${GITHUB_REF_NAME#v}.zip"
+
+      - name: Create GitHub Release with the package
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          python3 - "$VERSION" > release-notes.md <<'PY'
+          import sys
+          lines = open('docs/CHANGELOG.md', encoding='utf-8').read().splitlines()
+          notes, inside = [], False
+          for i, line in enumerate(lines):
+              heading = i + 1 < len(lines) and lines[i + 1].startswith('---')
+              if heading:
+                  inside = line.split(' ')[0] == sys.argv[1]
+              elif inside and not line.startswith('---'):
+                  notes.append(line)
+          print('\n'.join(notes).strip())
+          PY
+          gh release create "$GITHUB_REF_NAME" "metadata-cleaner-${VERSION}.zip" \
+            --title "$GITHUB_REF_NAME" --notes-file release-notes.md --verify-tag
 
       - name: Upload to HumHub Marketplace
+        if: github.event_name == 'workflow_dispatch' && startsWith(github.ref, 'refs/tags/')
         env:
           MODULE_ID: metadata-cleaner
-          ZIP: metadata-cleaner-${{ github.ref_name }}.zip
         run: |
+          ZIP="metadata-cleaner-${GITHUB_REF_NAME#v}.zip"
           curl --fail \
             -F "key=${{ secrets.MARKETPLACE_API_KEY }}" \
             -F "ModuleVersionUpload[zipFile]=@${ZIP}" \
