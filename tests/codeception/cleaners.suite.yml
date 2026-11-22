@@ -1,0 +1,10 @@
+# Unit tests for the format cleaners and readers.
+# They need no HumHub installation: run them with
+#   codecept run -c tests/codeception.cleaners.yml
+# exiftool is used to check the results; tests that need it are skipped
+# when it is not installed.
+actor: CleanerTester
+bootstrap: _bootstrap.php
+modules:
+    enabled:
+        - Asserts

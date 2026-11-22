@@ -1,0 +1,45 @@
+name: Release to HumHub Marketplace
+
+# Builds the Marketplace ZIP and uploads it as a new module version.
+# Triggered by version tags (v1.2.3) or manually from the Actions tab.
+#
+# Required secret: MARKETPLACE_API_KEY — create it in the HumHub Partner
+# Portal (partner.humhub.com) under your publisher account.
+# The tag version must match "version" in module.json and must not have
+# been uploaded before.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches module.json
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION="$(python3 -c "import json;print(json.load(open('module.json'))['version'])")"
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "Tag $TAG does not match module.json version $VERSION" >&2
+            exit 1
+          fi
+
+      - name: Build Marketplace package
+        run: python3 tests/bin/build-marketplace-zip.py --src . --out "metadata-cleaner-${{ github.ref_name }}.zip"
+
+      - name: Upload to HumHub Marketplace
+        env:
+          MODULE_ID: metadata-cleaner
+          ZIP: metadata-cleaner-${{ github.ref_name }}.zip
+        run: |
+          curl --fail \
+            -F "key=${{ secrets.MARKETPLACE_API_KEY }}" \
+            -F "ModuleVersionUpload[zipFile]=@${ZIP}" \
+            "https://api.humhub.com/v1/marketplace/upload?moduleId=${MODULE_ID}"
