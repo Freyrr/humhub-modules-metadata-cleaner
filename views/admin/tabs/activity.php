@@ -155,6 +155,7 @@ $formatSize = static function ($before, $after) {
                 <th class="text-end text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'Total') ?></th>
                 <th class="text-end text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'Removed') ?></th>
                 <th class="text-end text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'No metadata') ?></th>
+                <th class="text-end text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'Signed') ?></th>
                 <th class="text-end text-nowrap"><?= Yii::t('MetadataCleanerModule.base', 'Errors') ?></th>
             </tr>
             </thead>
@@ -165,11 +166,12 @@ $formatSize = static function ($before, $after) {
                     <td class="text-end"><?= $row['total'] ?></td>
                     <td class="text-end"><?= $row['cleaned'] ?></td>
                     <td class="text-end"><?= $row['clean'] ?></td>
+                    <td class="text-end"><?= $row['signed'] ?></td>
                     <td class="text-end"><?= $row['errors'] ?></td>
                 </tr>
             <?php endforeach; ?>
             <?php if ($stats['byFormat'] === []) : ?>
-                <tr><td colspan="5" class="text-body-secondary">—</td></tr>
+                <tr><td colspan="6" class="text-body-secondary">—</td></tr>
             <?php endif; ?>
             </tbody>
         </table>

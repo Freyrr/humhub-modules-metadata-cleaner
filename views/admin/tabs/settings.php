@@ -14,6 +14,9 @@ use humhub\widgets\form\ActiveForm;
 ?>
 <?php $form = ActiveForm::begin(['acknowledge' => true]) ?>
 <?= $form->field($model, 'formats')->checkboxList(ConfigureForm::formatOptions()) ?>
+<div class="alert alert-info">
+    <?= Yii::t('MetadataCleanerModule.base', 'Digitally signed PDF and Office files are never modified, so that their signature stays valid: their metadata is kept and they are counted as "Signed, not modified".') ?>
+</div>
 <?= $form->field($model, 'logMode')->dropDownList(ConfigureForm::logModeOptions()) ?>
 <div class="mb-3">
     <a class="text-decoration-none" data-bs-toggle="collapse" href="#metadata-cleaner-retention" role="button" aria-expanded="false" aria-controls="metadata-cleaner-retention">

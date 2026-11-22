@@ -16,7 +16,7 @@ Changelog
 - Enh: The module settings page is split into three tabs (*Settings*, *Existing files*, *Activity*) instead of one long scrolling page.
 - Fix: Files larger than 64 MB of memory-bound formats (TIFF/RAW, WAV, AVI, AIFF, PDF, SVG and still images) are no longer cleaned in memory: they are passed unchanged or rejected instead of risking a PHP memory exhaustion. The limit is additionally capped by the "Maximum upload file size" set in the HumHub file module settings.
 - Fix: When the content of an existing file is replaced (new version, online editor, REST API) and cannot be cleaned, the file is no longer deleted in "Reject the file" mode: the content is kept and the error is logged. Rejecting applies to new uploads only.
-- Enh: Digitally signed PDF, Office and OpenDocument files are left unchanged, so their signatures stay valid, and logged as not cleaned.
+- Enh: Digitally signed PDF, Office and OpenDocument files are left unchanged, so their signatures stay valid. The settings page says so, and the log and statistics count them as "Signed, not modified".
 - Enh: Office and OpenDocument files are rebuilt in a temporary file instead of in memory.
 - Enh: Cleaning existing files asks for confirmation and reminds to make a backup first, in the settings and on the console.
 - Enh: The console command `metadata-cleaner/clean` is a regular, documented action.

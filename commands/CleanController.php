@@ -9,6 +9,7 @@ namespace humhub\modules\metadataCleaner\commands;
 use humhub\modules\file\models\File;
 use humhub\modules\file\models\FileHistory;
 use humhub\modules\metadataCleaner\cleaners\CleanResult;
+use humhub\modules\metadataCleaner\cleaners\SignedDocumentException;
 use humhub\modules\metadataCleaner\Events;
 use humhub\modules\metadataCleaner\models\MetadataLog;
 use humhub\modules\metadataCleaner\models\MetadataStats;
@@ -95,6 +96,13 @@ class CleanController extends Controller
                         $this->stdout(sprintf("%s #%d %s\n", $this->dryRun ? 'would clean' : 'cleaned', $file->id, $file->file_name));
                     } else {
                         $counts['unchanged']++;
+                    }
+                } catch (SignedDocumentException $e) {
+                    // Left unchanged on purpose, so that the signature stays valid.
+                    $counts['unchanged']++;
+                    $this->stdout(sprintf("signed, not modified #%d %s\n", $file->id, $file->file_name));
+                    if (!$this->dryRun) {
+                        $log->recordFailure($file, (string)$file->file_name, null, $e, MetadataLog::STATUS_PASSED, LogService::SOURCE_CONSOLE);
                     }
                 } catch (Throwable $e) {
                     $counts['failed']++;

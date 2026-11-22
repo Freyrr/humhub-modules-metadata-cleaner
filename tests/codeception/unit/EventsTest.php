@@ -8,7 +8,9 @@ namespace metadataCleaner\unit;
 
 use humhub\modules\file\models\File;
 use humhub\modules\file\models\FileUpload;
+use humhub\modules\metadataCleaner\Events;
 use humhub\modules\metadataCleaner\models\MetadataLog;
+use humhub\modules\metadataCleaner\models\MetadataStats;
 use humhub\modules\metadataCleaner\Module;
 use humhub\modules\metadataCleaner\services\MetadataCleanerService;
 use humhub\modules\post\models\Post;
@@ -24,6 +26,13 @@ class EventsTest extends HumHubDbTestCase
 {
     /** @var string[] */
     private array $tmpFiles = [];
+
+    protected function _before()
+    {
+        parent::_before();
+        // Each test is one request: forget uploads handled by earlier tests.
+        (new \ReflectionProperty(Events::class, 'handledUploads'))->setValue(null, []);
+    }
 
     protected function _after()
     {
@@ -75,6 +84,9 @@ class EventsTest extends HumHubDbTestCase
 
         $this->assertTrue($upload->validate());
         $this->assertSame($before, file_get_contents($upload->uploadedFile->tempName));
+        $this->assertTrue(MetadataLog::find()->where(['status' => MetadataLog::STATUS_SIGNED])->exists(), 'logged as signed');
+        $this->assertSame(1, (int)MetadataStats::find()->where(['status' => MetadataStats::STATUS_SIGNED])->sum('total'), 'counted as signed');
+        $this->assertSame(1, MetadataStats::summary()['byFormat']['pdf']['signed'] ?? null);
     }
 
     public function testNewStoredContentIsCleaned(): void

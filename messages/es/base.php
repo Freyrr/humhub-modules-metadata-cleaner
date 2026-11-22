@@ -81,4 +81,7 @@ return [
     'Start cleaning' => 'Iniciar la limpieza',
     'Cancel' => 'Cancelar',
     'Cleaning rewrites the stored files and cannot be undone: make a backup of the file storage first.' => 'La limpieza reescribe los archivos guardados y no se puede deshacer: haga primero una copia de seguridad del almacenamiento de archivos.',
+    'Digitally signed PDF and Office files are never modified, so that their signature stays valid: their metadata is kept and they are counted as "Signed, not modified".' => 'Los archivos PDF y Office firmados digitalmente nunca se modifican, para que su firma siga siendo válida: sus metadatos se conservan y se cuentan como «Firmado, sin modificar».',
+    'Signed, not modified' => 'Firmado, sin modificar',
+    'Signed' => 'Firmados',
 ];

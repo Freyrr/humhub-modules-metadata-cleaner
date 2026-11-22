@@ -81,4 +81,7 @@ return [
     'Start cleaning' => '开始清理',
     'Cancel' => '取消',
     'Cleaning rewrites the stored files and cannot be undone: make a backup of the file storage first.' => '清理会重写已存储的文件且无法撤销：请先备份文件存储。',
+    'Digitally signed PDF and Office files are never modified, so that their signature stays valid: their metadata is kept and they are counted as "Signed, not modified".' => '带有数字签名的 PDF 和 Office 文件永远不会被修改，以保持签名有效：其元数据会被保留，并计为“已签名，未修改”。',
+    'Signed, not modified' => '已签名，未修改',
+    'Signed' => '已签名',
 ];

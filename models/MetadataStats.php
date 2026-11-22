@@ -35,6 +35,8 @@ class MetadataStats extends ActiveRecord
     public const STATUS_PASSED = 'passed';
     /** Cleaning failed, the file was rejected. */
     public const STATUS_REJECTED = 'rejected';
+    /** Digitally signed document, left unchanged so that the signature stays valid. */
+    public const STATUS_SIGNED = 'signed';
 
     /**
      * @inheritdoc
@@ -113,6 +115,7 @@ class MetadataStats extends ActiveRecord
             self::STATUS_CLEAN => Yii::t('MetadataCleanerModule.base', 'Processed, no metadata'),
             self::STATUS_PASSED => Yii::t('MetadataCleanerModule.base', 'Error, passed unchanged'),
             self::STATUS_REJECTED => Yii::t('MetadataCleanerModule.base', 'Error, rejected'),
+            self::STATUS_SIGNED => Yii::t('MetadataCleanerModule.base', 'Signed, not modified'),
         ];
     }
 
@@ -124,7 +127,7 @@ class MetadataStats extends ActiveRecord
      *     total: int,
      *     bytesSaved: int,
      *     byStatus: array<string, int>,
-     *     byFormat: array<string, array{total: int, cleaned: int, clean: int, errors: int}>,
+     *     byFormat: array<string, array{total: int, cleaned: int, clean: int, signed: int, errors: int}>,
      *     byMonth: list<array{month: string, total: int, cleaned: int, errors: int}>
      * }
      */
@@ -155,12 +158,14 @@ class MetadataStats extends ActiveRecord
             $bytesSaved += $b;
             $byStatus[$status] = ($byStatus[$status] ?? 0) + $n;
 
-            $byFormat[$format] ??= ['total' => 0, 'cleaned' => 0, 'clean' => 0, 'errors' => 0];
+            $byFormat[$format] ??= ['total' => 0, 'cleaned' => 0, 'clean' => 0, 'signed' => 0, 'errors' => 0];
             $byFormat[$format]['total'] += $n;
             if ($status === self::STATUS_CLEANED) {
                 $byFormat[$format]['cleaned'] += $n;
             } elseif ($status === self::STATUS_CLEAN) {
                 $byFormat[$format]['clean'] += $n;
+            } elseif ($status === self::STATUS_SIGNED) {
+                $byFormat[$format]['signed'] += $n;
             } else {
                 $byFormat[$format]['errors'] += $n;
             }
@@ -170,7 +175,7 @@ class MetadataStats extends ActiveRecord
             $months[$key]['total'] += $n;
             if ($status === self::STATUS_CLEANED) {
                 $months[$key]['cleaned'] += $n;
-            } elseif ($status !== self::STATUS_CLEAN) {
+            } elseif ($status === self::STATUS_PASSED || $status === self::STATUS_REJECTED) {
                 $months[$key]['errors'] += $n;
             }
         }

@@ -8,6 +8,7 @@ namespace humhub\modules\metadataCleaner\services;
 
 use humhub\modules\file\models\File;
 use humhub\modules\metadataCleaner\cleaners\CleanResult;
+use humhub\modules\metadataCleaner\cleaners\SignedDocumentException;
 use humhub\modules\metadataCleaner\models\MetadataLog;
 use humhub\modules\metadataCleaner\models\MetadataStats;
 use humhub\modules\metadataCleaner\Module;
@@ -161,15 +162,21 @@ class LogService
      * metadata or not, unless the log is switched off.
      *
      * @param File|null $file null when the upload was rejected before a record existed
-     * @param string $status MetadataLog::STATUS_PASSED or MetadataLog::STATUS_REJECTED
+     * @param string $status MetadataLog::STATUS_PASSED or MetadataLog::STATUS_REJECTED;
+     *     a SignedDocumentException is always recorded as MetadataLog::STATUS_SIGNED
      * @param string|null $contentHash SHA1 of the content stored (unchanged upload), to link the row later
      */
     public function recordFailure(?File $file, string $fileName, ?string $format, Throwable $error, string $status, string $source, ?int $size = null, ?string $contentHash = null): void
     {
-        MetadataStats::record(
-            $format,
-            $status === MetadataLog::STATUS_REJECTED ? MetadataStats::STATUS_REJECTED : MetadataStats::STATUS_PASSED,
-        );
+        if ($error instanceof SignedDocumentException) {
+            // Not an error: the document is kept unchanged on purpose.
+            $status = MetadataLog::STATUS_SIGNED;
+        }
+        MetadataStats::record($format, match ($status) {
+            MetadataLog::STATUS_REJECTED => MetadataStats::STATUS_REJECTED,
+            MetadataLog::STATUS_SIGNED => MetadataStats::STATUS_SIGNED,
+            default => MetadataStats::STATUS_PASSED,
+        });
 
         if ($this->module->getLogMode() === Module::LOG_OFF) {
             return;
@@ -181,7 +188,7 @@ class LogService
             $log->format = $format;
             $log->error = mb_substr($error->getMessage() ?: get_class($error), 0, 255);
             $log->size_before = $size ?? ($file?->size !== null ? (int)$file->size : null);
-            $log->size_after = $status === MetadataLog::STATUS_PASSED ? $log->size_before : null;
+            $log->size_after = $status !== MetadataLog::STATUS_REJECTED ? $log->size_before : null;
             $log->content_hash = $contentHash;
             $this->save($log);
         } catch (Throwable $e) {

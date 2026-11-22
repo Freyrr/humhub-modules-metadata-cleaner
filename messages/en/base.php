@@ -81,4 +81,7 @@ return [
     'Start cleaning' => '',
     'Cancel' => '',
     'Cleaning rewrites the stored files and cannot be undone: make a backup of the file storage first.' => '',
+    'Digitally signed PDF and Office files are never modified, so that their signature stays valid: their metadata is kept and they are counted as "Signed, not modified".' => '',
+    'Signed, not modified' => '',
+    'Signed' => '',
 ];

@@ -41,6 +41,8 @@ class MetadataLog extends ActiveRecord
     public const STATUS_PASSED = 'passed';
     /** Cleaning failed, the file was rejected. */
     public const STATUS_REJECTED = 'rejected';
+    /** Digitally signed document, left unchanged so that the signature stays valid. */
+    public const STATUS_SIGNED = 'signed';
 
     /**
      * @inheritdoc
@@ -83,6 +85,7 @@ class MetadataLog extends ActiveRecord
             self::STATUS_CLEANED => Yii::t('MetadataCleanerModule.base', 'Cleaned'),
             self::STATUS_PASSED => Yii::t('MetadataCleanerModule.base', 'Error, passed unchanged'),
             self::STATUS_REJECTED => Yii::t('MetadataCleanerModule.base', 'Error, rejected'),
+            self::STATUS_SIGNED => Yii::t('MetadataCleanerModule.base', 'Signed, not modified'),
         ];
     }
 

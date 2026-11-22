@@ -47,12 +47,29 @@ class Events
      */
     private static array $handledUploads = [];
 
+    /**
+     * Objects already handled, so that a handler registered twice for the
+     * same event (as happens in some test setups) does not count or log a
+     * file twice. Uploads map to true, stored files to the content hash
+     * that was handled.
+     */
+    private static ?\WeakMap $handled = null;
+
+    private static function handledMap(): \WeakMap
+    {
+        return self::$handled ??= new \WeakMap();
+    }
+
     public static function onFileUploadAfterValidate(Event $event): void
     {
         $file = $event->sender;
         if (!$file instanceof FileUpload || $file->hasErrors() || !$file->uploadedFile instanceof UploadedFile) {
             return;
         }
+        if (isset(self::handledMap()[$file])) {
+            return;
+        }
+        self::handledMap()[$file] = true;
         try {
             $module = self::getModule();
         } catch (Throwable $e) {
@@ -115,8 +132,12 @@ class Events
         }
 
         $hash = (string)$file->hash_sha1;
+        if ((self::handledMap()[$file] ?? null) === $hash) {
+            return;
+        }
         $seen = isset(self::$handledUploads[$hash]);
         unset(self::$handledUploads[$hash]);
+        self::handledMap()[$file] = $hash;
         $log = new LogService($module);
         if ($seen) {
             // The upload was cleaned in this request: link its log row.
@@ -146,10 +167,12 @@ class Events
                 MetadataLog::STATUS_PASSED,
                 LogService::SOURCE_STORED,
             );
+            self::handledMap()[$file] = (string)$file->hash_sha1;
             return;
         }
 
         (new LogService($module))->record($file, $result, LogService::SOURCE_STORED, $sizeBefore);
+        self::handledMap()[$file] = (string)$file->hash_sha1;
     }
 
     /**

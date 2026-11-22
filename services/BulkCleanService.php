@@ -9,6 +9,7 @@ namespace humhub\modules\metadataCleaner\services;
 use humhub\modules\file\models\File;
 use humhub\modules\file\models\FileHistory;
 use humhub\modules\metadataCleaner\cleaners\CleanResult;
+use humhub\modules\metadataCleaner\cleaners\SignedDocumentException;
 use humhub\modules\metadataCleaner\Events;
 use humhub\modules\metadataCleaner\models\MetadataLog;
 use humhub\modules\metadataCleaner\Module;
@@ -193,7 +194,8 @@ class BulkCleanService
             try {
                 $outcome = $this->processFile($file, (bool)$state['dryRun']);
             } catch (Throwable $e) {
-                $outcome = 'failed';
+                // A signed document is left unchanged on purpose.
+                $outcome = $e instanceof SignedDocumentException ? 'unchanged' : 'failed';
                 if (!$state['dryRun']) {
                     (new LogService($this->module))->recordFailure(
                         $file,
@@ -204,7 +206,9 @@ class BulkCleanService
                         LogService::SOURCE_ADMIN,
                     );
                 }
-                Yii::error($e, 'metadata-cleaner');
+                if ($outcome === 'failed') {
+                    Yii::error($e, 'metadata-cleaner');
+                }
             }
 
             $state[$outcome] = ($state[$outcome] ?? 0) + 1;
